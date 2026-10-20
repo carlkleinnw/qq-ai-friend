@@ -2,7 +2,7 @@
   "astrbot_plugin_private_companion": {
     "basic_config": {
       "bot_name": "AI伙伴",
-      "plugin_specific_persona_id": "qq-friend",
+      "plugin_specific_persona_id": "",
       "target_platform": "qq_official",
       "default_proactive_enabled": false,
       "default_proactive_daily_limit": 0,
@@ -14,6 +14,9 @@
     "life_schedule_config": {"enable_daily_plan": false},
     "schedule_detail_config": {"enable_daily_diary": false, "enable_daily_review": false},
     "humanized_state_config": {
+      "inject_passive_states": false,
+      "enable_rest_reply_simulation": false,
+      "enable_busy_reply_gate": false,
       "enable_humanized_states": false,
       "enable_health_state": false,
       "enable_hunger_state": false,

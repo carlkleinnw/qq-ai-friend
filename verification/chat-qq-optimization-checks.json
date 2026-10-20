@@ -1,0 +1,14 @@
+{
+  "checks": {
+    "phone_received_server_reply": true,
+    "one_server_reply": true,
+    "simulated_state_not_injected": true,
+    "test_message_processed": true
+  },
+  "format_observation": {
+    "literal_OK_requested": true,
+    "literal_OK_returned": false,
+    "actual_reply": "好的"
+  },
+  "note": "Transport checks pass; model replied in Chinese instead of literal OK. No persona/language adjustment made."
+}

@@ -1,0 +1,8 @@
+{
+  "checks": {
+    "first_turn_one_saved_reply": true,
+    "context_retained": true,
+    "second_turn_one_saved_reply": true
+  },
+  "scope": "isolated AstrBot webchat session with actual configured DeepSeek"
+}
