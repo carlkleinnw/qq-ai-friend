@@ -1,0 +1,21 @@
+{
+  "astrbot": {
+    "version": "4.29.1",
+    "repository": "https://github.com/AstrBotDevs/AstrBot",
+    "distribution": "PyPI wheel"
+  },
+  "plugins": [
+    {
+      "directory": "private_companion",
+      "repository": "https://github.com/menglimi/astrbot_plugin_private_companion.git",
+      "tag": "v6.7.0",
+      "commit": "f2f87183993a0667800056f73bcf12df298cdbcb"
+    },
+    {
+      "directory": "memory_companion",
+      "repository": "https://github.com/menglimi/astrbot_plugin_memory_companion.git",
+      "tag": "v2.3.1",
+      "commit": "fc13a00d38e3ccaa560d617f8cd22788250465ae"
+    }
+  ]
+}

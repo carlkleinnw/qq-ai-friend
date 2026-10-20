@@ -1,0 +1,48 @@
+{
+  "astrbot_plugin_private_companion": {
+    "basic_config": {
+      "bot_name": "AI伙伴",
+      "plugin_specific_persona_id": "qq-friend",
+      "target_platform": "qq_official",
+      "default_proactive_enabled": false,
+      "default_proactive_daily_limit": 0,
+      "enable_flirt_content_tier": false,
+      "enable_persona_voice_channels": false
+    },
+    "relay_bridge_config": {"enable_atrelay_tools": false},
+    "private_followup_config": {"enable_group_conversation_followup": false},
+    "life_schedule_config": {"enable_daily_plan": false},
+    "schedule_detail_config": {"enable_daily_diary": false, "enable_daily_review": false},
+    "humanized_state_config": {
+      "enable_humanized_states": false,
+      "enable_health_state": false,
+      "enable_hunger_state": false,
+      "enable_cycle_state": false
+    },
+    "photo_action_config": {
+      "enable_photo_text_action": false,
+      "enable_user_requested_photo_generation": false
+    },
+    "presence_sync_config": {"enable_qq_presence_sync": false},
+    "weather_config": {
+      "enable_weather_context": false,
+      "enable_environment_change_proactive": false,
+      "enable_yesterday_screen_diary_context": false
+    },
+    "wardrobe_config": {"enable_wardrobe": false, "enable_wardrobe_prompt": false}
+  },
+  "astrbot_plugin_memory_companion": {
+    "scope_control": {
+      "group_capture_enabled": false,
+      "group_recall_enabled": false,
+      "group_topology_enabled": false
+    },
+    "portrait": {"daily_dispatch_enabled": false},
+    "retrieval": {"embedding_enabled": false},
+    "conversation_memory_advanced": {
+      "cross_window_group_to_private_enabled": false,
+      "cross_window_private_to_group_enabled": false
+    },
+    "memory_injection": {"debug_log_injection_enabled": false}
+  }
+}

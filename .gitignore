@@ -1,0 +1,13 @@
+runtime/
+.venv/
+.cache/
+data/
+logs/
+dist/
+verification/private/
+research/video_frames/
+__pycache__/
+*.pyc
+.env
+.env.*
+*.local.json

@@ -1,0 +1,18 @@
+{
+  "checked_at": "2026-10-20T11:49:43.833606+00:00",
+  "checks": {
+    "unauthenticated_settings_denied": true,
+    "authenticated_settings_accessible": true,
+    "astrbot_plugin_private_companion_loaded": true,
+    "astrbot_plugin_memory_companion_loaded": true,
+    "persona_retained": true,
+    "loopback_only": true,
+    "browser_login": true,
+    "api_key_input_masked": true
+  },
+  "external_setup": {
+    "deepseek_key_present": false,
+    "deepseek_model_enabled": false,
+    "qq_configured": false
+  }
+}
