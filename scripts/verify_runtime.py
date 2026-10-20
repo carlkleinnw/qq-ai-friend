@@ -37,10 +37,17 @@ def main():
         checks["loopback_only"] = config["dashboard"]["host"] == "127.0.0.1"
         report["external_setup"] = {
             "deepseek_key_present": any(
-                key.strip() for source in config["provider_sources"] if source["id"] == "deepseek"
+                key.strip() for source in config["provider_sources"]
+                if source.get("provider") == "deepseek" or source["id"] == "deepseek"
                 for key in source.get("key", [])
             ),
-            "deepseek_model_enabled": any(row.get("enable") for row in config["provider"] if row.get("provider_source_id") == "deepseek"),
+            "deepseek_model_enabled": any(
+                row.get("enable") for row in config["provider"]
+                if row.get("provider_source_id") in {
+                    source["id"] for source in config["provider_sources"]
+                    if source.get("provider") == "deepseek" or source["id"] == "deepseek"
+                }
+            ),
             "qq_configured": any(row.get("type") == "qq_official" for row in config["platform"]),
         }
     private = ROOT / "verification/private"
