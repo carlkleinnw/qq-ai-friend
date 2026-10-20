@@ -1,5 +1,5 @@
 {
-  "checked_at": "2026-10-20T11:54:00.064943+00:00",
+  "checked_at": "2026-10-20T12:06:56.466082+00:00",
   "checks": {
     "unauthenticated_settings_denied": true,
     "authenticated_settings_accessible": true,
@@ -13,6 +13,6 @@
   "external_setup": {
     "deepseek_key_present": true,
     "deepseek_model_enabled": true,
-    "qq_configured": false
+    "qq_configured": true
   }
 }

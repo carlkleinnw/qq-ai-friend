@@ -1,0 +1,19 @@
+{
+  "checked_at": "2026-10-20T12:07:08.394746+00:00",
+  "method": "USB-connected Android phone + QQ Official WebSocket + AstrBot logs",
+  "checks": {
+    "bot_binding_saved": true,
+    "phone_bot_online": true,
+    "phone_sent_test_message": true,
+    "server_received_test_message": true,
+    "server_generated_reply": true,
+    "phone_received_one_reply": true,
+    "memory_hook_observed": true
+  },
+  "pending": [
+    "QQ long-term memory restart recall",
+    "QQ scheduled notification delivery",
+    "QQ voice delivery"
+  ],
+  "private_evidence": "verification/private/phone/qq-test.png"
+}
