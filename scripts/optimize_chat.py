@@ -33,7 +33,7 @@ def main() -> None:
         if not backup.exists():
             backup.write_text(json.dumps(plugin, ensure_ascii=False, indent=2), encoding="utf-8")
         changes = {
-            "basic_config": {"plugin_specific_persona_id": ""},
+            "basic_config": {} if plugin["basic_config"].get("enable_multi_persona_mode") else {"plugin_specific_persona_id": ""},
             "humanized_state_config": {
                 "inject_passive_states": False,
                 "enable_rest_reply_simulation": False,

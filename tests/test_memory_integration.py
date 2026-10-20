@@ -42,12 +42,12 @@ class MemoryIntegrationTests(unittest.IsolatedAsyncioTestCase):
         return service
 
     @staticmethod
-    def context(user="owner-openid", scope="private", bot="bot-001"):
+    def context(user="owner-openid", scope="private", bot="bot-001", persona=""):
         kind = "FriendMessage" if scope == "private" else "GroupMessage"
         return SessionContext(
             session_id=f"qq-official-main:{kind}:{user}",
             scope=scope, platform="qq_official", user_id=user,
-            user_name="验收用户", bot_id=bot,
+            user_name="验收用户", bot_id=bot, persona_id=persona,
             group_id="group-001" if scope == "group" else "",
             message_text="我喜欢哪家面馆？",
         )
@@ -76,6 +76,23 @@ class MemoryIntegrationTests(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn("云杉面馆", await self.recall(service, self.context("other-openid")))
         self.assertNotIn("云杉面馆", await self.recall(service, self.context(scope="group")))
         self.assertNotIn("云杉面馆", await self.recall(service, self.context(bot="other-bot")))
+
+    async def test_two_bot_persona_memories_remain_separate_after_restart(self):
+        service = self.make_service()
+        first = self.context(bot="qq-bot-a", persona="qq-friend")
+        second = self.context(bot="qq-bot-b", persona="gpt-lord")
+        for ctx, marker in ((first, "银杉馆"), (second, "蓝鹭馆")):
+            service.identity.resolve_event_context = AsyncMock(return_value=ctx)
+            result = await service.tool_remember(object(), f"验收用户最喜欢的面馆是{marker}。", note_type="preference")
+            self.assertTrue(result.get("ok"), result)
+        service.close()
+        service = self.make_service()
+        first_recall = await self.recall(service, first)
+        second_recall = await self.recall(service, second)
+        self.assertIn("银杉馆", first_recall)
+        self.assertNotIn("蓝鹭馆", first_recall)
+        self.assertIn("蓝鹭馆", second_recall)
+        self.assertNotIn("银杉馆", second_recall)
 
 
 if __name__ == "__main__":

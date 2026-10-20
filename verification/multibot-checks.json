@@ -1,0 +1,39 @@
+{
+  "checks": {
+    "first_recalls_own_code_after_restart_and_new_conversation": true,
+    "first_does_not_recall_second_code": true,
+    "second_recalls_own_code_after_restart_and_new_conversation": true,
+    "second_does_not_recall_first_code": true,
+    "both_use_memory_tool": true,
+    "two_bot_routes_persisted": true,
+    "both_bots_running_after_restart": true,
+    "qq-friend_companion_profile_healthy": true,
+    "gpt-lord_companion_profile_healthy": true,
+    "temporary_test_memories_deleted": true,
+    "second_phone_received_own_persona_name": true,
+    "first_phone_single_reply_received": true
+  },
+  "real_device": "Android QQ via USB",
+  "scope": "Two distinct QQ bots using native profile routes, service restart, fresh conversations, memory recall tools and phone receipts.",
+  "upstream_regression": {
+    "multi_persona_suite": {
+      "passed": 50,
+      "failed": 1,
+      "subtests_passed": 3,
+      "failure_reason": "Static decorator coverage assertion includes 2 plugin lifecycle hooks and 2 event-local wake-message hooks that do not use persona data."
+    },
+    "wake_and_bridge_suites": {
+      "passed": 17,
+      "failed": 33,
+      "skipped": 2,
+      "failure_reason": "Wake test fixture lacks db_helper required by AstrBot 4.29.1 stage initialization; fails before wake logic."
+    }
+  },
+  "project_tests_passed": 6,
+  "known_limits": [
+    "Same-bot persona switching is outside this isolation validation.",
+    "Upstream automated regression suites are not fully green.",
+    "Reminder and voice delivery are not tested in this change."
+  ],
+  "checked_at": "2026-10-20T12:41:29.313899+00:00"
+}
