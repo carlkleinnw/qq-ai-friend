@@ -1,0 +1,54 @@
+{
+  "checked_at": "2026-10-21T05:04:43.769667+00:00",
+  "stack": "AstrBot 4.29.1 native Edge TTS / result decoration / QQ Official WebSocket",
+  "voice": {
+    "id": "edge_tts_dafeiyu",
+    "provider": "microsoft",
+    "type": "edge_tts",
+    "provider_type": "text_to_speech",
+    "enable": true,
+    "edge-tts-voice": "zh-CN-XiaoyiNeural",
+    "rate": "+3%",
+    "pitch": "+6Hz",
+    "volume": "+0%",
+    "timeout": 25
+  },
+  "checks": {
+    "sample_generated_with_native_adapter": true,
+    "sample_full_decode": true,
+    "qq_greeting_voice_7_seconds_and_text_received": true,
+    "qq_comfort_voice_8_seconds_and_text_received": true,
+    "phone_playback_started_for_qq_uid": true,
+    "disabled_mode_text_only_received": true,
+    "reenabled_mode_voice_and_text_received": true,
+    "gpt_voice_disabled": true,
+    "gpt_profile_and_persona_unchanged_during_setup": true,
+    "target_non_tts_settings_unchanged": true,
+    "original_persona_and_tools_preserved_with_style_appended_once": true,
+    "native_synthesis_failure_retains_text_tested": true
+  },
+  "sample": {
+    "file": "verification/大肥鱼_声音试听.wav",
+    "sha256": "a9de28b4635c5a1a606bae4cf1e76aa84a24b6c7e37b83a57d1592c7ee936424",
+    "duration_seconds": 9.39,
+    "sample_rate": 24000,
+    "channels": 1,
+    "bits": 16,
+    "rms_dbfs": -22.95
+  },
+  "project_tests": {
+    "passed": 19
+  },
+  "references": [
+    "https://github.com/ERUIHNIYHBKBNF/dafeiyu-persona",
+    "https://github.com/rany2/edge-tts"
+  ],
+  "limitations": [
+    "Stock-voice approximation; no specific video voice was identified or cloned.",
+    "Mood comes mainly from text, punctuation and stock voice; arbitrary emotional style control is not supported.",
+    "Playback start confirmed through Android state and UI; subjective similarity awaits user listening.",
+    "Synthesis failure fallback tested at real upstream stage with simulated provider failure; QQ upload retries not accepted.",
+    "Incoming voice transcription, long-code narration and advanced emotions are outside this delivery.",
+    "Prior upstream regression compatibility failures remain documented."
+  ]
+}

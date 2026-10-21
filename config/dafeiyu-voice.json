@@ -1,0 +1,12 @@
+{
+  "id": "edge_tts_dafeiyu",
+  "provider": "microsoft",
+  "type": "edge_tts",
+  "provider_type": "text_to_speech",
+  "enable": true,
+  "edge-tts-voice": "zh-CN-XiaoyiNeural",
+  "rate": "+3%",
+  "pitch": "+6Hz",
+  "volume": "+0%",
+  "timeout": 25
+}

@@ -13,3 +13,5 @@
 安装的第三方代码和二进制保存在本地 runtime，源码交付包不包含该目录，不将未明确授权的插件重新包装为自己的作品发布。完整安装依赖包含各自的许可证和元数据，见 Conda 环境的 site-packages。
 
 2026-10-21：对已安装 memory_companion v2.3.1 的传统面板做了一处本地兼容修复，纠正编辑表单的权限、生命周期选项并保留未知值。原始 vendor 检出未修改；可审阅、重复执行的修复在 `scripts/repair_memory_panel.py`，具体原因与验证见 `docs/记忆管理.md`。未修改其记忆引擎或权限策略，源码包仍不包含插件源码。
+
+大肥鱼表达风格参考 ERUIHNIYHBKBNF 的 [dafeiyu-persona](https://github.com/ERUIHNIYHBKBNF/dafeiyu-persona)（仓库标注 MIT）。只借鉴社区角色特征，自行编写短提示词和示例，未安装该 skill 或打包其源码。声音使用现有 edge-tts 与 AstrBot 原生适配器，不包含视频原声、第三方录音或新声音模型。
