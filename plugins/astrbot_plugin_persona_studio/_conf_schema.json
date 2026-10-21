@@ -1,0 +1,3 @@
+{
+  "bots": {"type": "list", "description": "可编辑的机器人", "hint": "每项包含 bot_id 与 name；机器人路由仍由原生配置管理。", "default": []}
+}

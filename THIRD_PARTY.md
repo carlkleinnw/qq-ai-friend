@@ -19,3 +19,5 @@
 0.1.1 本机稳定性修复对已安装 AstrBot 4.29.1 的 Edge TTS 超时、原生一次性提醒失败保留与启动恢复、原生备份提醒表覆盖做了最小修改。固定原文件摘要与可复查替换规则分别在 repair_tts_timeout.py、repair_cron_failure.py、repair_backup_coverage.py；原文件在 runtime/backups。继续使用原有重试、调度、导入导出和 SDK，不分发完整第三方源码。新增消息防重插件是本项目的原生事件钩子，使用标准库 SQLite 唯一约束；启停锁复用已锁定的 filelock，未增加依赖。
 
 指定上游测试的兼容检查在私有副本进行，原始检出和生产陪伴插件未修改；四个经审查的事件局部/生命周期钩子用 AST 摘要固定，避免以后误用同一排除结论。具体修正和结果见 scripts/check_upstream_compat.py 与 docs/稳定性验收.md。
+
+0.2.0 人设功能直接复用 AstrBot 的原生 Plugin View、鉴权、PersonaManager 与数据库。本项目新增薄表单适配和四种原创短预设；参考 SillyTavern 官方角色设计说明的组织方式，未复制其代码或打包其前端。研究了 Persona+ 的方案但未安装或复制其代码：QQ 资料同步仅支持 NapCat，与当前官方接入不兼容。来源与取舍见 docs/人设功能.md，没有新增第三方依赖。

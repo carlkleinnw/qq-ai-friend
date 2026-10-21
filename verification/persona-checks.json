@@ -1,0 +1,48 @@
+{
+  "checked_at": "2026-10-21T18:04:38.070439+08:00",
+  "native_store_browser_save_and_reload": true,
+  "presets_only_change_draft_before_save": true,
+  "qq_bio_paste_and_bio_only_save": true,
+  "tools_skills_error_message_and_dialogue_preserved": true,
+  "stale_native_edit_rejected_draft_kept": true,
+  "unsaved_bot_switch_cancelled_safely": true,
+  "empty_input_rejected": true,
+  "textarea_html_not_executed": true,
+  "temporary_persona_profile_route_and_target_removed": true,
+  "official_qq_bio_auto_sync": false,
+  "scope": "Real browser and native persona database; no paid model call or QQ message was sent.",
+  "version": "0.2.0",
+  "project_tests": {
+    "passed": 50,
+    "failed": 0,
+    "skipped": 0,
+    "new_persona_tests": 9
+  },
+  "responsive_native_browser_checks": [
+    {
+      "viewport": "desktop",
+      "native_bridge_loaded": true,
+      "bot_switch_works": true,
+      "horizontal_overflow": false,
+      "page_errors": []
+    },
+    {
+      "viewport": "mobile",
+      "native_bridge_loaded": true,
+      "bot_switch_works": true,
+      "horizontal_overflow": false,
+      "page_errors": []
+    }
+  ],
+  "both_real_personas_profiles_and_routes_preserved": true,
+  "unauthenticated_read_and_write_rejected": true,
+  "installer_repeat_preserves_configuration": true,
+  "native_api_usable_after_service_restart": true,
+  "native_backup_restore": {
+    "tables": 14,
+    "files_identical": 1475,
+    "sqlite_integrity_checks": 10,
+    "live_data_overwritten": false
+  },
+  "installed_plugin_matches_source": true
+}
