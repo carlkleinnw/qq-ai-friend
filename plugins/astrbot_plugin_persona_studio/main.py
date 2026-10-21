@@ -4,10 +4,12 @@ import json
 from pathlib import Path
 
 from astrbot.api.star import Star, Context
+from astrbot.api.event import filter, AstrMessageEvent
 from astrbot.api.web import request, json_response, error_response
 from astrbot.dashboard.services.persona_service import PersonaService
 
 from .persona_form import pack, unpack, revision
+from .qq_commands import QQPersonaCommands, ALIASES
 
 PLUGIN = 'astrbot_plugin_persona_studio'
 
@@ -18,8 +20,16 @@ class PersonaStudio(Star):
         self.config = config
         self.lock = asyncio.Lock()
         self.presets = json.loads((Path(__file__).parent / 'presets.json').read_text(encoding='utf-8'))
+        self.qq_commands = QQPersonaCommands(self)
         for endpoint, handler, method in [('state', self.state, 'GET'), ('save', self.save, 'POST')]:
             context.register_web_api(f'/{PLUGIN}/{endpoint}', handler, [method], 'AI好友人设编辑')
+
+    @filter.command('人设', alias=ALIASES, priority=100000)
+    async def qq_persona_command(self, event: AstrMessageEvent):
+        """在授权的 QQ 私聊中选择、自定义、预览和确认人设。"""
+        event.should_call_llm(False)
+        yield event.plain_result(await self.qq_commands.execute(event)).use_t2i(False)
+        event.stop_event()
 
     def targets(self):
         return self.config.get('bots', [])

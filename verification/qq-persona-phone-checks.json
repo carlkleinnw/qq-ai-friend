@@ -1,0 +1,51 @@
+{
+  "checked_at": "2026-10-21T18:29:09.534850+08:00",
+  "checks": [
+    {
+      "check": "menu",
+      "phone_reply_received": true
+    },
+    {
+      "check": "preset-preview",
+      "phone_reply_received": true
+    },
+    {
+      "check": "preset-save",
+      "phone_reply_received": true
+    },
+    {
+      "check": "preset-current",
+      "phone_reply_received": true
+    },
+    {
+      "check": "custom-preview",
+      "phone_reply_received": true
+    },
+    {
+      "check": "custom-save",
+      "phone_reply_received": true
+    },
+    {
+      "check": "custom-current",
+      "phone_reply_received": true
+    },
+    {
+      "check": "cancel-preview",
+      "phone_reply_received": true
+    },
+    {
+      "check": "cancel",
+      "phone_reply_received": true
+    },
+    {
+      "check": "restored-current",
+      "phone_reply_received": true
+    }
+  ],
+  "real_preset_selection_and_confirmation": true,
+  "real_custom_text_and_confirmation": true,
+  "real_cancel_keeps_saved_persona": true,
+  "original_persona_restored": true,
+  "other_bot_unchanged": true,
+  "scope": "Physical QQ on previously authorized Dafeiyu private chat. ASCII aliases exercise the same handler as Chinese commands."
+}

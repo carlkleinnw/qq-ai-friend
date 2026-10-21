@@ -1,14 +1,14 @@
 {
-  "checked_at": "2026-10-21T18:03:57.742283",
-  "archive_sha256": "f0abcbee27618fdf5c3ada327aa7d86c957017238ecbf7d35d92dd70f6fead83",
+  "checked_at": "2026-10-21T18:31:28.299609",
+  "archive_sha256": "89700280fdac12a205709795238ca19b215103eb883ceee27c543b84f4bad201",
   "native_import_succeeded": true,
   "reexport_rows_equal": true,
   "tables": 14,
   "rows": 32,
-  "files_identical": 1475,
+  "files_identical": 1476,
   "sqlite_integrity_checks": 10,
   "bots_started_in_restore_directory": false,
-  "source_files_verified": 1474,
+  "source_files_verified": 1475,
   "reminder_table_included": true,
   "live_data_overwritten": false
 }

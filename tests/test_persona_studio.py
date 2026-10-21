@@ -3,6 +3,7 @@ from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock
+import time
 
 import pytest
 import astrbot.api  # Match native plugin startup order before importing manager internals.
@@ -88,3 +89,101 @@ class PersonaIntegrationTests(unittest.IsolatedAsyncioTestCase):
         for preset in self.plugin.presets:
             self.assertTrue(pack(preset['bio'], preset['prompt']))
         self.assertEqual(before, await self.plugin.snapshot('bot-a'))
+
+    def qq_event(self, text, bot='bot-a', sender='owner', scope=None, private=True, admin=False):
+        return SimpleNamespace(get_message_str=lambda: text, get_platform_id=lambda: bot,
+                               get_sender_id=lambda: sender, is_admin=lambda: admin,
+                               is_private_chat=lambda: private,
+                               unified_msg_origin=scope or f'{bot}:FriendMessage:{sender}')
+
+    def allow_qq_owner(self):
+        self.plugin.config['qq_editor_sessions'] = ['bot-a:FriendMessage:owner', 'bot-b:FriendMessage:owner']
+
+    async def test_qq_preset_preview_confirm_is_native_and_does_not_change_other_bot(self):
+        self.allow_qq_owner()
+        original = await self.plugin.snapshot('bot-a')
+        other = await self.plugin.snapshot('bot-b')
+        command = self.plugin.qq_commands.execute
+        self.assertIn('体贴甜蜜女友', await command(self.qq_event('/人设')))
+        self.assertIn('待确认：体贴甜蜜女友', await command(self.qq_event('/人设 5')))
+        self.assertEqual(original, await self.plugin.snapshot('bot-a'))
+        self.assertIn('已保存', await command(self.qq_event('/确认人设')))
+        current = await self.plugin.snapshot('bot-a')
+        self.assertEqual(self.plugin.presets[4]['bio'], current['bio'])
+        self.assertEqual(self.plugin.presets[4]['prompt'], current['prompt'])
+        self.assertIn('体贴甜蜜女友', await command(self.qq_event('/当前人设')))
+        self.assertEqual(other, await self.plugin.snapshot('bot-b'))
+        self.assertEqual(['future_task'], (await self.manager.get_persona('friend-a')).tools)
+        self.assertIn('没有待确认', await command(self.qq_event('/确认人设')))
+
+    async def test_qq_custom_text_preserves_spaces_and_newlines_and_cancel_keeps_native(self):
+        self.allow_qq_owner()
+        command = self.plugin.qq_commands.execute
+        original = await self.plugin.snapshot('bot-a')
+        text = '你是一位体贴的 AI 好友。\n说话温柔，少用套话。'
+        self.assertIn('待确认', await command(self.qq_event('/自定义人设 ' + text)))
+        self.assertIn('已取消', await command(self.qq_event('/取消人设')))
+        self.assertEqual(original, await self.plugin.snapshot('bot-a'))
+        await command(self.qq_event('/setpersona ' + text))
+        self.assertIn('已保存', await command(self.qq_event('/confirmpersona')))
+        self.assertEqual(text, (await self.plugin.snapshot('bot-a'))['prompt'])
+
+    async def test_qq_permission_blocks_other_senders_groups_and_spoofed_scope(self):
+        self.allow_qq_owner()
+        command = self.plugin.qq_commands.execute
+        original = await self.plugin.snapshot('bot-a')
+        self.assertIn('尚未获得', await command(self.qq_event('/人设 5', sender='stranger')))
+        self.assertIn('群聊中不执行', await command(self.qq_event('/人设 5', private=False, admin=True)))
+        self.assertIn('尚未获得', await command(self.qq_event('/人设 5', sender='stranger', scope='bot-a:FriendMessage:owner')))
+        self.assertIn('未找到', await command(self.qq_event('/人设 5', bot='unknown', admin=True)))
+        self.assertEqual(original, await self.plugin.snapshot('bot-a'))
+        self.assertEqual({}, self.plugin.qq_commands.pending)
+
+    async def test_qq_expired_drafts_and_cross_bot_confirmation_do_not_save(self):
+        self.allow_qq_owner()
+        command = self.plugin.qq_commands.execute
+        original = await self.plugin.snapshot('bot-a')
+        await command(self.qq_event('/人设 体贴甜蜜女友'))
+        self.assertIn('没有待确认', await command(self.qq_event('/确认人设', bot='bot-b')))
+        self.plugin.qq_commands.pending[('bot-a:FriendMessage:owner', 'owner')]['expires'] = time.monotonic() - 1
+        self.assertIn('已过期', await command(self.qq_event('/确认人设')))
+        self.assertEqual(original, await self.plugin.snapshot('bot-a'))
+
+    async def test_qq_confirmation_rejects_web_edits_and_native_admin_can_prepare(self):
+        command = self.plugin.qq_commands.execute
+        await command(self.qq_event('/人设 5', admin=True))
+        await self.manager.update_persona('friend-a', system_prompt='New web content')
+        self.assertIn('未保存', await command(self.qq_event('/确认人设', admin=True)))
+        self.assertEqual('New web content', (await self.plugin.snapshot('bot-a'))['prompt'])
+
+    async def test_qq_invalid_or_oversized_custom_input_never_saves(self):
+        self.allow_qq_owner()
+        command = self.plugin.qq_commands.execute
+        original = await self.plugin.snapshot('bot-a')
+        self.assertIn('未找到', await command(self.qq_event('/人设 99')))
+        self.assertIn('请在指令后', await command(self.qq_event('/自定义人设')))
+        self.assertIn('20000', await command(self.qq_event('/自定义人设 ' + 'x' * 20001)))
+        self.assertEqual(original, await self.plugin.snapshot('bot-a'))
+
+    async def test_native_command_filter_accepts_alias_and_handler_stops_without_llm(self):
+        from astrbot.api.event import AstrMessageEvent
+        from astrbot.core.platform.astrbot_message import AstrBotMessage, MessageMember
+        from astrbot.core.platform.message_type import MessageType
+        from astrbot.core.platform.platform_metadata import PlatformMetadata
+        from astrbot.core.star.star_handler import star_handlers_registry, EventType
+        from astrbot.core.star.filter.command import CommandFilter
+        self.allow_qq_owner()
+        message = AstrBotMessage()
+        message.type = MessageType.FRIEND_MESSAGE
+        message.sender = MessageMember(user_id='owner', nickname='owner')
+        event = AstrMessageEvent('presets 5', message, PlatformMetadata('qq_official', 'isolated test', 'bot-a'), 'owner')
+        event.is_at_or_wake_command = True
+        handler = next(h for h in star_handlers_registry.get_handlers_by_event_type(EventType.AdapterMessageEvent)
+                       if h.handler_name == 'qq_persona_command' and h.handler_module_path == PersonaStudio.__module__)
+        command_filter = next(f for f in handler.event_filters if isinstance(f, CommandFilter))
+        self.assertTrue(command_filter.filter(event, {}))
+        replies = [reply async for reply in self.plugin.qq_persona_command(event)]
+        self.assertEqual(1, len(replies))
+        self.assertIn('待确认', replies[0].chain[0].text)
+        self.assertFalse(event.call_llm)
+        self.assertTrue(event.is_stopped())

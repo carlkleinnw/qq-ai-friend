@@ -1,0 +1,24 @@
+{
+  "version": "0.3.0",
+  "checked_at": "2026-10-21T18:31:29.947123+08:00",
+  "project_tests": {
+    "passed": 57,
+    "failed": 0,
+    "skipped": 0,
+    "new_qq_persona_tests": 7
+  },
+  "native_plugin_loaded_and_command_registered": true,
+  "native_command_filter_and_event_handler_tested": true,
+  "preset_and_custom_preview_confirm_use_native_persona_store": true,
+  "permission_private_scope_sender_and_group_checks_tested": true,
+  "draft_expiry_cancel_cross_bot_and_web_conflict_tested": true,
+  "existing_personas_preserved_after_installation_and_phone_test_cleanup": true,
+  "two_previously_verified_private_scopes_authorized": true,
+  "web_persona_api_available": true,
+  "installed_plugin_matches_source": true,
+  "phone_delivery_tested_this_turn": true,
+  "physical_phone_checks": 10,
+  "paid_model_called": false,
+  "scope": "Native event/filter and isolated native database tests, live plugin registration, and real physical QQ selection/customization/confirmation/cancellation. Original persona restored.",
+  "effect": "Edits the selected bot default persona, shared with the web editor; not a per-contact role override or a QQ public-profile update."
+}
