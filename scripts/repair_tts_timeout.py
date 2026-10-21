@@ -1,9 +1,10 @@
 """Apply a pinned one-line timeout correction to the existing Edge TTS adapter."""
 import hashlib
 from pathlib import Path
+from service import PYTHON
 
 ROOT = Path(__file__).resolve().parents[1]
-TARGET = ROOT / "runtime/conda/Lib/site-packages/astrbot/core/provider/sources/edge_tts_source.py"
+TARGET = PYTHON.parent / "Lib/site-packages/astrbot/core/provider/sources/edge_tts_source.py"
 ORIGINAL = "4efb2c13406e6458219eeb68b1eafe56e90a20c34c4946c4ce2b8807f48a3e24"
 OLD = "await communicate.save(mp3_path)"
 NEW = "await asyncio.wait_for(communicate.save(mp3_path), timeout=self.timeout)"

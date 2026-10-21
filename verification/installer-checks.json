@@ -1,0 +1,97 @@
+{
+  "version": "0.4.0",
+  "recorded_at": "2026-10-21T22:39:54.343767",
+  "branch": "codex/windows-installer",
+  "release_tag": "v0.4.0",
+  "remote_configured": false,
+  "artifact": {
+    "filename": "AI好友_Setup_0.4.0.exe",
+    "bytes": 59127193,
+    "sha256": "491b9697e3bcec21fba9ceeb1ae7de15601a39886b685612ba74bf35d486275c"
+  },
+  "project_tests": {
+    "passed": 71,
+    "failed": 0
+  },
+  "installer_wizard": {
+    "readable_chinese": true,
+    "non_c_drive_default": true,
+    "directory_selection": true,
+    "required_space_gib": 4.1
+  },
+  "factory_application": {
+    "version": "0.4.0",
+    "dashboard_http": true,
+    "initial_setup_completed": true,
+    "no_bundled_api_keys": true,
+    "no_bundled_qq_accounts": true,
+    "four_plugins_loaded": true,
+    "default_persona_created": true,
+    "maintenance_status_without_qq": true,
+    "real_browser_login": true,
+    "persona_view_loaded": true,
+    "five_presets": true,
+    "browser_errors": []
+  },
+  "clean_environment_native_imports": [
+    "ssl",
+    "sqlite3",
+    "ctypes"
+  ],
+  "factory_conversation_rows": 0,
+  "maintenance": {
+    "visible_buttons": 15,
+    "status_button_verified": true,
+    "native_backup_verified": true,
+    "isolated_restore_verified": true
+  },
+  "backup_restore": {
+    "native_import_succeeded": true,
+    "reexport_rows_equal": true,
+    "tables": 14,
+    "rows": 5,
+    "files_identical": 1460,
+    "sqlite_integrity_checks": 10,
+    "source_files_verified": 1459,
+    "reminder_table_included": true,
+    "live_data_overwritten": false,
+    "bots_started_in_restore_directory": false
+  },
+  "upgrade": {
+    "private_fixture_version": "0.4.1",
+    "installer_exit_code": 0,
+    "preserved": [
+      "api_key",
+      "disabled_qq_configuration",
+      "persona",
+      "native_conversation",
+      "memory_database",
+      "local_credentials"
+    ],
+    "same_version_retry_preserves_rollback": true
+  },
+  "rollback": {
+    "injected_initialization_failure_restored_version": "0.4.1",
+    "manual_rollback_restored_version": "0.4.0",
+    "registry_version_updated": true,
+    "fixture_data_preserved": true
+  },
+  "uninstall_reinstall": {
+    "same_directory_reinstall_exit_code": 0,
+    "fixture_data_preserved": true,
+    "autostart_create_and_remove_verified": true,
+    "final_test_program_removed": true,
+    "runtime_retained": true,
+    "unowned_file_retained": true
+  },
+  "scope": {
+    "same_windows_x64_development_machine": true,
+    "second_physical_pc_tested": false,
+    "cold_dependency_download_verified_with_earlier_build": true,
+    "final_factory_setup_reused_verified_dependency_cache": true,
+    "new_qq_account_and_paid_model_calls_tested": false,
+    "private_upgrade_versions_are_not_public_releases": true,
+    "signed": false,
+    "automatic_update_feed": false
+  }
+}

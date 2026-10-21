@@ -14,6 +14,18 @@ service = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(service)
 
 
+def test_installed_environment_and_port_are_local_and_validated(tmp_path):
+    config = tmp_path / 'installation.local.json'
+    config.write_text(json.dumps({'environment': 'envs/locked', 'port': 6191}))
+    assert service.installation_settings(tmp_path) == (tmp_path / 'envs/locked/python.exe', 6191)
+    config.write_text(json.dumps({'environment': '../elsewhere', 'port': 6191}))
+    with pytest.raises(ValueError, match='inside'):
+        service.installation_settings(tmp_path)
+    config.write_text(json.dumps({'port': True}))
+    with pytest.raises(ValueError, match='port'):
+        service.installation_settings(tmp_path)
+
+
 def test_reused_process_id_is_never_accepted(tmp_path):
     state = tmp_path / "process.json"
     state.write_text(json.dumps({"pid": 12, "created": 100}))

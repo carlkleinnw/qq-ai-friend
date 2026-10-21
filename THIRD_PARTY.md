@@ -2,6 +2,8 @@
 
 本项目以现成组件配置和组合为主，未重写其对话、记忆、平台或调度实现。
 
+0.4.0 的 Windows 安装器复用 NSIS Modern UI 2、官方 conda-standalone 26.7.0 和 Windows 自带 .NET Framework。Conda 可执行文件采用固定 SHA256，许可证和依赖许可证保留在 installer/licenses。上游陪伴 / 记忆插件从原始仓库按固定提交下载并校验，不嵌入安装 EXE。安装器不代表上游插件获得新的分发授权。构建、来源与升级约定见 installer/README.md。
+
 | 组件 | 固定版本 / 提交 | 来源与许可说明 |
 | --- | --- | --- |
 | AstrBot | 4.29.1 | https://github.com/AstrBotDevs/AstrBot ，AGPL-3.0-or-later；实际运行代码来自同版本 PyPI wheel |

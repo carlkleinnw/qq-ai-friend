@@ -119,7 +119,7 @@ try {
   for (const preset of presets) $('preset').add(new Option(preset.name, preset.id));
   $('preset').onchange();
   if (data.bots.length) await load(data.bots[0].bot_id);
-  else status('尚未配置可编辑的机器人，请在本机运行人设安装脚本，或在插件配置中添加机器人。', true);
+  else status('尚未配置可编辑的机器人。请先在面板扫码保存 QQ，再到“维护与更新”点击“同步 QQ 机器人”。');
 } catch (error) {
   status(`无法连接人设面板，请刷新或重新登录。${String(error.message || error).slice(0, 150)}`, true);
 }

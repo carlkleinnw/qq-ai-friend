@@ -9,6 +9,7 @@ from pathlib import Path
 import httpx
 
 from apply_profile import checked
+from service import URL
 
 ROOT = Path(__file__).resolve().parents[1]
 STYLE_HEADER = "## 大肥鱼聊天与朗读风格"
@@ -42,7 +43,7 @@ def main():
         raise ValueError("Bots share a profile; independent configuration is required")
     preset = json.loads((ROOT / "config/dafeiyu-voice.json").read_text(encoding="utf-8"))
     style = (ROOT / "config/dafeiyu-speaking-style.md").read_text(encoding="utf-8")
-    with httpx.Client(base_url="http://127.0.0.1:6185", trust_env=False, timeout=60) as client:
+    with httpx.Client(base_url=URL, trust_env=False, timeout=60) as client:
         token = checked(client.post("/api/v1/auth/login", json={
             "username": credentials["username"], "password": credentials["initial_password"],
         }))["token"]

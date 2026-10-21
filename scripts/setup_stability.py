@@ -6,6 +6,7 @@ import shutil
 
 import httpx
 from apply_profile import checked
+from service import URL
 
 ROOT = Path(__file__).resolve().parents[1]
 ERROR_MESSAGE = "这次没有收到有效回复，可能是连接或模型服务暂时不可用。请稍后重发；若持续失败，请在本机检查模型设置。"
@@ -18,7 +19,7 @@ def main():
         return
     state = json.loads((ROOT / "runtime/multibot.local.json").read_text())
     cr = json.loads((ROOT / "runtime/dashboard-login.local.json").read_text())
-    with httpx.Client(base_url="http://127.0.0.1:6185", trust_env=False, timeout=60) as c:
+    with httpx.Client(base_url=URL, trust_env=False, timeout=60) as c:
         c.headers["Authorization"] = "Bearer " + checked(c.post("/api/v1/auth/login", json={"username": cr["username"], "password": cr["initial_password"]}))["token"]
         url = "/api/v1/config-profiles/" + state["profiles"]["qq-friend"]
         other_url = "/api/v1/config-profiles/" + state["profiles"]["gpt-lord"]

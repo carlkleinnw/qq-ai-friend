@@ -1,9 +1,9 @@
 {
-  "checked_at": "2026-10-21T17:41:07.859610",
+  "checked_at": "2026-10-21T22:39:54.590884",
   "dashboard_ready": true,
-  "disk_free_gib": 46.5,
+  "disk_free_gib": 41.9,
   "managed_process_running": true,
-  "latest_backup_at": "2026-10-21T13:42:04.991118",
+  "latest_backup_at": "2026-10-21T18:30:14.358771",
   "bots": [
     {
       "name": "大肥鱼",

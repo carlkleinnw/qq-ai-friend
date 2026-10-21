@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 import httpx
+from service import URL
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -31,7 +32,7 @@ def main() -> None:
         print("Profile already applied. User settings were preserved.")
         return
     credentials = json.loads((ROOT / "runtime/dashboard-login.local.json").read_text())
-    with httpx.Client(base_url="http://127.0.0.1:6185", trust_env=False, timeout=90) as client:
+    with httpx.Client(base_url=URL, trust_env=False, timeout=90) as client:
         login = checked(client.post("/api/v1/auth/login", json={
             "username": credentials["username"], "password": credentials["initial_password"],
         }))

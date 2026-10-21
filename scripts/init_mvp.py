@@ -6,6 +6,7 @@ import os
 import secrets
 import shutil
 from pathlib import Path
+from service import PORT, URL
 
 ROOT = Path(__file__).resolve().parents[1]
 APP = ROOT / "runtime" / "app"
@@ -27,7 +28,7 @@ def main() -> None:
 
         config = AstrBotConfig(config_path=str(config_path))
         config["dashboard"]["host"] = "127.0.0.1"
-        config["dashboard"]["port"] = 6185
+        config["dashboard"]["port"] = PORT
         config["disable_metrics"] = True
         config["timezone"] = "Asia/Shanghai"
         config["log_file_enable"] = True
@@ -43,7 +44,7 @@ def main() -> None:
             "id": "deepseek", "provider": "deepseek",
             "type": "openai_chat_completion", "provider_type": "chat_completion",
             "enable": True, "key": [], "api_base": "https://api.deepseek.com/v1",
-            "timeout": 60, "proxy": "", "custom_headers": {},
+            "timeout": 25, "proxy": "", "custom_headers": {},
         }]
         config["provider"] = [{
             "id": "deepseek/deepseek-flash", "provider_source_id": "deepseek",
@@ -61,7 +62,7 @@ def main() -> None:
             json.dumps(credentials, ensure_ascii=False, indent=2), encoding="utf-8"
         )
         (ROOT / "runtime" / "本机登录说明.txt").write_text(
-            "面板：http://127.0.0.1:6185\n账号：astrbot\n初始密码："
+            "面板：" + URL + "\n账号：astrbot\n初始密码："
             + password + "\n首次登录后请按面板提示设置自己的密码。\n"
             + "DeepSeek API Key 请在模型提供商设置中填写。\n",
             encoding="utf-8",

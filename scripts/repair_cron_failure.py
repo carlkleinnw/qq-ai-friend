@@ -1,9 +1,10 @@
 """Keep failed native one-shot reminders visible and disabled for explicit recovery."""
 import hashlib
 from pathlib import Path
+from service import PYTHON
 
 ROOT = Path(__file__).resolve().parents[1]
-TARGET = ROOT / "runtime/conda/Lib/site-packages/astrbot/core/cron/manager.py"
+TARGET = PYTHON.parent / "Lib/site-packages/astrbot/core/cron/manager.py"
 ORIGINAL = "3c0a1ff2421b181b4f20632d83ed66f390e61d591e43d54995799fb280e3f5f5"
 OLD = '''            if job.run_once and delete_run_once:
                 # one-shot: remove after execution regardless of success

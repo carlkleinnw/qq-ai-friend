@@ -19,9 +19,23 @@ from filelock import FileLock
 ROOT = Path(__file__).resolve().parents[1]
 RUNTIME = ROOT / "runtime"
 APP = RUNTIME / "app"
-PYTHON = RUNTIME / "conda" / "python.exe"
 STATE = RUNTIME / "service.local.json"
-URL = "http://127.0.0.1:6185"
+
+
+def installation_settings(runtime: Path) -> tuple[Path, int]:
+    metadata = runtime / 'installation.local.json'
+    settings = json.loads(metadata.read_text(encoding='utf-8')) if metadata.exists() else {}
+    prefix = (runtime / settings.get('environment', 'conda')).resolve()
+    if not prefix.is_relative_to(runtime.resolve()):
+        raise ValueError('Environment must stay inside the installation runtime directory.')
+    port = settings.get('port', 6185)
+    if not isinstance(port, int) or isinstance(port, bool) or not 1024 <= port <= 65535:
+        raise ValueError('Invalid local dashboard port.')
+    return prefix / 'python.exe', port
+
+
+PYTHON, PORT = installation_settings(RUNTIME)
+URL = f"http://127.0.0.1:{PORT}"
 
 
 def managed_process() -> psutil.Process | None:
@@ -54,17 +68,18 @@ def start(open_browser: bool = True) -> None:
     if not process:
         with socket.socket() as probe:
             probe.settimeout(1)
-            occupied = probe.connect_ex(("127.0.0.1", 6185)) == 0
+            occupied = probe.connect_ex(("127.0.0.1", PORT)) == 0
         if occupied:
-            raise RuntimeError("Port 6185 belongs to another instance. No process was stopped.")
+            raise RuntimeError(f"Port {PORT} belongs to another instance. No process was stopped.")
         environment = os.environ.copy()
         environment.update({
             "ASTRBOT_ROOT": str(APP), "PYTHONUTF8": "1",
             "PYTHONIOENCODING": "utf-8", "TEMP": str(APP / "data" / "temp"),
             "TMP": str(APP / "data" / "temp"),
-            "UV_CACHE_DIR": "E:/DeveloperCache/uv",
-            "PIP_CACHE_DIR": "E:/DeveloperCache/pip",
+            "UV_CACHE_DIR": str(RUNTIME / 'cache' / 'uv'),
+            "PIP_CACHE_DIR": str(RUNTIME / 'cache' / 'pip'),
             "PATH": str(RUNTIME / "tools") + os.pathsep + str(PYTHON.parent)
+            + os.pathsep + str(PYTHON.parent / "Scripts")
             + os.pathsep + str(PYTHON.parent / "Library" / "bin")
             + os.pathsep + environment.get("PATH", ""),
         })

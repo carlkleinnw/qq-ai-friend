@@ -1,0 +1,26 @@
+{
+  "version": "0.4.0",
+  "data_format": "astrbot-4.29.1-v1",
+  "conda_standalone": {
+    "version": "26.7.0",
+    "url": "https://conda.anaconda.org/conda-forge/win-64/conda-standalone-26.7.0-h3cc9849_0.conda",
+    "sha256": "89c7c30b8dc932d3f97f47efd09f52c34128f77eeb0f8208053b8f3be6b04281",
+    "executable_sha256": "3af800eabcd5a3a68834256c4146a318ae16ed7695afac42dd3c8a8d7579b718"
+  },
+  "dashboard": {
+    "url": "https://github.com/AstrBotDevs/AstrBot/releases/download/v4.29.1/AstrBot-v4.29.1-dashboard.zip",
+    "sha256": "55a52c359d16574ccef04e760006b3b0d7a5253c3c4912099ae3ebc53e4f3603"
+  },
+  "plugins": [
+    {
+      "directory": "private_companion",
+      "url": "https://codeload.github.com/menglimi/astrbot_plugin_private_companion/zip/f2f87183993a0667800056f73bcf12df298cdbcb",
+      "sha256": "5098b59390549f845750b878bf49116441926b7eb2b70291eab5a1a5ba63924b"
+    },
+    {
+      "directory": "memory_companion",
+      "url": "https://codeload.github.com/menglimi/astrbot_plugin_memory_companion/zip/fc13a00d38e3ccaa560d617f8cd22788250465ae",
+      "sha256": "7cc72404ad19fa377d967cceb2a3902c3d2c686ed487cad70438cc304ba7ee75"
+    }
+  ]
+}

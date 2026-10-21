@@ -1,9 +1,10 @@
 """Include native CronJob rows in the existing shared export/import model map."""
 import hashlib
 from pathlib import Path
+from service import PYTHON
 
 ROOT = Path(__file__).resolve().parents[1]
-TARGET = ROOT / "runtime/conda/Lib/site-packages/astrbot/core/backup/constants.py"
+TARGET = PYTHON.parent / "Lib/site-packages/astrbot/core/backup/constants.py"
 ORIGINAL = "4678bfc50a7d1af3794aeacf0c3411d7eeac8355716bc86d95206a189e3a972e"
 CHANGES = [
     ("    ConversationV2,\n", "    ConversationV2,\n    CronJob,\n"),

@@ -23,13 +23,19 @@ def main():
     result["latest_backup_at"] = json.loads(latest.read_text()).get("created_at") if latest.exists() else None
     if result["dashboard_ready"]:
         cr = json.loads((ROOT / "runtime/dashboard-login.local.json").read_text())
-        state = json.loads((ROOT / "runtime/multibot.local.json").read_text())
         with httpx.Client(base_url=service.URL, trust_env=False, timeout=10) as client:
             client.headers["Authorization"] = "Bearer " + checked(client.post("/api/v1/auth/login", json={"username": cr["username"], "password": cr["initial_password"]}))["token"]
             stats = checked(client.get("/api/v1/bots/stats"))["platforms"]
-            result["bots"] = [{"name": name, "adapter_status": next((p["status"] for p in stats if p["id"] == bot), "missing")}
-                              for name, bot in [("大肥鱼", state["first_bot_id"]), ("GPT大人", state["second_bot_id"])]]
-            cfg = checked(client.get("/api/v1/config-profiles/" + state["profiles"]["qq-friend"]))["config"]
+            cfg = checked(client.get('/api/v1/config-profiles/default'))['config']
+            editor = checked(client.get('/api/v1/plugins/astrbot_plugin_persona_studio/config'))['config']
+            names = {bot['bot_id']: bot['name'] for bot in editor.get('bots', [])}
+            bots = [bot for bot in cfg.get('platform', []) if bot.get('enable', True) and bot.get('type') in {'qq_official', 'qq_official_webhook'}]
+            result['bots'] = [{'name': names.get(bot['id'], 'QQ好友 '+str(index+1)),
+                               'adapter_status': next((p['status'] for p in stats if p['id'] == bot['id']), 'missing')}
+                              for index, bot in enumerate(bots)]
+            routes = checked(client.get('/api/v1/config-routes'))['routing']
+            if bots and routes.get(bots[0]['id']+'::'):
+                cfg = checked(client.get('/api/v1/config-profiles/'+routes[bots[0]['id']+'::']))['config']
             result["dafeiyu_voice_enabled"] = cfg["provider_tts_settings"]["enable"]
             result["dafeiyu_retry_attempts"] = cfg["agent_runner"]["config"]["model"]["request_max_retries"]
             provider_id = cfg["agent_runner"]["config"]["model"]["provider_id"]
@@ -41,11 +47,16 @@ def main():
                 jobs = jobs.get("jobs", [])
             result["failed_reminders"] = sum(job.get("status") == "failed" for job in jobs)
     report = ROOT / "verification/daily-status.json"
+    report.parent.mkdir(parents=True, exist_ok=True)
     report.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print("本地面板：" + ("可访问" if result["dashboard_ready"] else "未运行，请先双击启动AI好友"))
     for bot in result.get("bots", []):
         print(bot["name"] + "连接进程状态：" + str(bot["adapter_status"]))
-    print("E盘剩余空间：" + str(result["disk_free_gib"]) + " GB")
+    print("安装盘剩余空间：" + str(result["disk_free_gib"]) + " GB")
+    if not result.get('bots') and result['dashboard_ready']:
+        print('尚未接入 QQ：请在面板扫码保存，再从维护窗口同步。')
+    if result.get('model_key_present') is False:
+        print('尚未填写模型密钥：请在模型提供商设置中填写并保存。')
     print("最近备份：" + str(result["latest_backup_at"] or "尚未创建"))
     if result.get("failed_reminders"):
         print("有失败提醒，请到面板的未来任务查看；核对是否已投递后再手动运行或调整时间。")
