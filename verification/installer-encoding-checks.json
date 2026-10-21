@@ -1,0 +1,33 @@
+{
+  "version": "0.4.1",
+  "symptom": "Chinese text in NSIS installation detail logs was garbled",
+  "reproduced_before_fix": true,
+  "cause": "UTF-8 output was decoded by nsExec using the Windows ANSI code page",
+  "fix": "Use UTF-16LE for the NSIS pipe; decode native stdout and stderr explicitly as UTF-8",
+  "regression_tests": {
+    "project_tests_passed": 75,
+    "nsis_plugin_chinese_error_text": true,
+    "native_stdout_chinese_lines_verified": 500,
+    "native_stderr_chinese_lines_verified": 500,
+    "native_exit_codes_verified": [0, 7],
+    "unicode_space_and_trailing_backslash_arguments_verified": true,
+    "root_license_payload_supported": true
+  },
+  "actual_installer": {
+    "wizard_install_completed": true,
+    "chinese_and_space_installation_path": true,
+    "detail_log_screenshot_visually_checked": true,
+    "utf8_transcript_readable": true,
+    "installed_version": "0.4.1",
+    "dashboard_http_status": 200,
+    "independent_test_port": 6192,
+    "dependency_environment_and_cache_reused": true
+  },
+  "scope": {
+    "same_windows_x64_development_machine": true,
+    "other_physical_pc_tested": false,
+    "real_qq_messages_or_paid_model_calls": false,
+    "original_bot_configuration_changed": false
+  },
+  "license_packaging": "Root LICENSE is included and accepted by the payload allowlist; third-party licenses remain unchanged"
+}

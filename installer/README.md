@@ -15,7 +15,7 @@
 需要 Windows x64、Python 3.12、NSIS 3.12+ 和锁定的 conda-standalone EXE。先检查空间，工具下载到非 C 盘。
 
 ```powershell
-python installer/build.py --version 0.4.0 --compiler "E:/DeveloperTools/nsis-3.12/NSIS/makensis.exe" --conda "E:/DeveloperTools/conda-standalone-26.7.0/standalone_conda/conda.exe" --output "dist/AI好友_Setup_0.4.0.exe"
+python installer/build.py --version 0.4.1 --compiler "E:/DeveloperTools/nsis-3.12/NSIS/makensis.exe" --conda "E:/DeveloperTools/conda-standalone-26.7.0/standalone_conda/conda.exe" --output "dist/AI好友_Setup_0.4.1.exe"
 ```
 
 构建器校验 Conda EXE，按明确允许的源码目录生成逐文件哈希清单、载荷和 EXE SHA256。runtime、dist、测试、截图和私人账号不进入载荷。构建期间不要编辑源码；本版未统一时间信息，不宣称逐字节可复现。

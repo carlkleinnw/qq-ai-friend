@@ -1,7 +1,7 @@
 {
-  "checked_at": "2026-10-21T22:39:54.590884",
+  "checked_at": "2026-10-21T23:30:53.705146",
   "dashboard_ready": true,
-  "disk_free_gib": 41.9,
+  "disk_free_gib": 40.0,
   "managed_process_running": true,
   "latest_backup_at": "2026-10-21T18:30:14.358771",
   "bots": [

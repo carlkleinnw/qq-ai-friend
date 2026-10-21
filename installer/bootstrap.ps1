@@ -5,8 +5,11 @@
     [Parameter(Mandatory=$true)][string]$CondaExe
 )
 $ErrorActionPreference = 'Stop'
-[Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
-$OutputEncoding = [Console]::OutputEncoding
+# nsExec detects UTF-16LE, but treats UTF-8 as the Windows ANSI code page.
+# Native tools remain UTF-8; decode their pipes explicitly before writing here.
+[Console]::OutputEncoding = [Text.Encoding]::Unicode
+[Console]::WriteLine(([char]0xFEFF).ToString() + 'AI好友安装日志')
+$OutputEncoding = [Text.UTF8Encoding]::new($false)
 $InstallRoot = [IO.Path]::GetFullPath($InstallRoot).TrimEnd('\')
 $runtimePath = Join-Path $InstallRoot 'runtime'
 $setupLock = $null
@@ -19,16 +22,40 @@ function Get-InstallerSha([string]$FilePath) {
 }
 function Invoke-SetupCommand([string]$Executable,[string[]]$NativeArguments) {
     if (-not [IO.File]::Exists($Executable)) { throw '安装工具缺失，请重新运行安装程序。' }
-    $savedPreference=$ErrorActionPreference
+    $start=[Diagnostics.ProcessStartInfo]::new()
+    $start.FileName=$Executable
+    $start.Arguments=(@($NativeArguments | ForEach-Object {
+        if ($_ -ne '' -and $_ -notmatch '[\s"]') { $_ }
+        else { '"' + [regex]::Replace([regex]::Replace($_, '(\\*)"', '$1$1\"'), '(\\+)$', '$1$1') + '"' }
+    }) -join ' ')
+    $start.UseShellExecute=$false; $start.CreateNoWindow=$true
+    $start.RedirectStandardOutput=$true; $start.RedirectStandardError=$true
+    $start.StandardOutputEncoding=[Text.UTF8Encoding]::new($false)
+    $start.StandardErrorEncoding=[Text.UTF8Encoding]::new($false)
+    $process=[Diagnostics.Process]::Start($start)
     try {
-        # Windows PowerShell 5.1 represents native stderr as error records,
-        # including successful progress messages. Judge native exit codes instead.
-        $ErrorActionPreference='Continue'
-        $global:LASTEXITCODE=$null
-        & $Executable @NativeArguments 2>&1 | ForEach-Object { Write-Output $_.ToString() }
-        $nativeExit=$global:LASTEXITCODE
-    } finally { $ErrorActionPreference=$savedPreference }
-    if ($null -eq $nativeExit) { throw '安装子步骤未能启动，请查看上方日志。' }
+        $out=$process.StandardOutput.ReadLineAsync()
+        $err=$process.StandardError.ReadLineAsync()
+        while ($null -ne $out -or $null -ne $err) {
+            $advanced=$false
+            foreach ($stream in @('out','err')) {
+                $pending=Get-Variable -Name $stream -ValueOnly
+                if ($null -ne $pending -and $pending.IsCompleted) {
+                    $advanced=$true
+                    $line=$pending.GetAwaiter().GetResult()
+                    if ($null -eq $line) { Set-Variable -Name $stream -Value $null }
+                    else {
+                        Write-Output $line
+                        $reader=if ($stream -eq 'out') { $process.StandardOutput } else { $process.StandardError }
+                        Set-Variable -Name $stream -Value $reader.ReadLineAsync()
+                    }
+                }
+            }
+            if (-not $advanced) { Start-Sleep -Milliseconds 30 }
+        }
+        $process.WaitForExit()
+        $nativeExit=$process.ExitCode
+    } finally { $process.Dispose() }
     if ($nativeExit -ne 0) { throw ('安装子步骤返回错误 '+$nativeExit+'，请查看上方日志。') }
 }
 try {

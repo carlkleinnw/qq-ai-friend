@@ -1,6 +1,10 @@
 ﻿param([ValidateSet('Start','Stop','Maintain','Backup','Verify','Setup','PrepareUninstall','Persona','Status','LoginInfo','EnableAutostart','DisableAutostart','Background')][string]$Action='Maintain')
 $ErrorActionPreference='Stop'
 [Console]::OutputEncoding=[Text.UTF8Encoding]::new($false)
+if ($Action -eq 'PrepareUninstall') {
+    [Console]::OutputEncoding=[Text.Encoding]::Unicode
+    [Console]::WriteLine(([char]0xFEFF).ToString() + 'AI好友卸载日志')
+}
 $root=Split-Path -Parent $PSScriptRoot
 $launchScript=$PSCommandPath
 $settings=Get-Content -LiteralPath (Join-Path $root 'runtime\installation.local.json') -Raw -Encoding UTF8 | ConvertFrom-Json

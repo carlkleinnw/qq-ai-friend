@@ -203,3 +203,77 @@ exit 0
                             capture_output=True, text=True, timeout=30)
     assert result.returncode == 0, result.stderr
     assert 'native-exit-scope-ok' in result.stdout
+
+
+@pytest.mark.skipif(sys.platform != 'win32', reason='NSIS Windows pipe integration')
+def test_nsis_reads_bootstrap_chinese_without_system_codepage(tmp_path):
+    compiler = Path('E:/DeveloperTools/nsis-3.12/NSIS/makensis.exe')
+    if not compiler.exists():
+        pytest.skip('NSIS compiler is not installed')
+    payload = tmp_path / 'payload.zip'
+    payload.write_bytes(b'invalid fixture')
+    capture = tmp_path / 'output.txt'
+    executable = tmp_path / 'probe.exe'
+    source = tmp_path / 'probe.nsi'
+    source.write_text('''Unicode true
+RequestExecutionLevel user
+SilentInstall silent
+OutFile "__EXE__"
+Section
+nsExec::ExecToStack '"$SYSDIR\\WindowsPowerShell\\v1.0\\powershell.exe" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "__BOOTSTRAP__" -InstallRoot "__INSTALL__" -Payload "__PAYLOAD__" -ExpectedSha "__HASH__" -CondaExe "missing.exe"'
+Pop $0
+Pop $1
+FileOpen $2 "__CAPTURE__" w
+FileWriteUTF16LE $2 "$0$\\r$\\n$1"
+FileClose $2
+SectionEnd
+'''.replace('__EXE__', str(executable)).replace('__BOOTSTRAP__', str(ROOT / 'installer/bootstrap.ps1'))
+        .replace('__INSTALL__', str(tmp_path / '中文 空格')).replace('__PAYLOAD__', str(payload))
+        .replace('__HASH__', '0' * 64).replace('__CAPTURE__', str(capture)), encoding='utf-8-sig')
+    subprocess.run([str(compiler), '/V1', '/INPUTCHARSET', 'UTF8', str(source)], check=True, capture_output=True)
+    subprocess.run([str(executable)], check=True, timeout=30)
+    text = capture.read_text(encoding='utf-16-le')
+    assert text.splitlines()[0] == '1', text
+    assert '安装未完成：安装内容校验失败。' in text, repr(text)
+
+
+@pytest.mark.skipif(sys.platform != 'win32', reason='Windows PowerShell native pipe integration')
+@pytest.mark.parametrize('native_exit', [0, 7])
+def test_native_utf8_stdout_stderr_are_streamed_without_loss(tmp_path, native_exit):
+    child = tmp_path / '中文 工具.py'
+    child.write_text('import sys\nfor n in range(500):\n'
+                     ' print("标准输出：中文路径 " + str(n), flush=True)\n'
+                     ' print("标准错误：中文提示 " + str(n), file=sys.stderr, flush=True)\n'
+                     'print(repr(sys.argv[1:]), flush=True)\n'
+                     f'sys.exit({native_exit})\n', encoding='utf-8')
+    script = tmp_path / 'run.ps1'
+    script.write_text(r'''
+$ErrorActionPreference='Stop'
+[Console]::OutputEncoding=[Text.Encoding]::Unicode
+$env:PYTHONIOENCODING='utf-8'
+$tokens=$null; $errors=$null
+$ast=[System.Management.Automation.Language.Parser]::ParseFile('__BOOTSTRAP__',[ref]$tokens,[ref]$errors)
+$function=$ast.Find({param($node) $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq 'Invoke-SetupCommand'},$true)
+. ([scriptblock]::Create($function.Extent.Text))
+try { Invoke-SetupCommand '__PYTHON__' @('__CHILD__','含 空格','C:\中文 路径\'); Write-Output 'native-ok' }
+catch { Write-Output $_.Exception.Message }
+'''.replace('__BOOTSTRAP__', str(ROOT / 'installer/bootstrap.ps1'))
+        .replace('__PYTHON__', sys.executable).replace('__CHILD__', str(child)), encoding='utf-8-sig')
+    shell = Path(os.environ['WINDIR']) / 'System32/WindowsPowerShell/v1.0/powershell.exe'
+    result = subprocess.run([str(shell), '-NoProfile', '-NonInteractive', '-File', str(script)],
+                            capture_output=True, timeout=30)
+    text = result.stdout.decode('utf-16-le')
+    assert result.returncode == 0
+    assert text.count('标准输出：中文路径 ') == 500
+    assert text.count('标准错误：中文提示 ') == 500
+    assert "['含 空格', 'C:\\\\中文 路径\\\\']" in text
+    assert ('native-ok' in text) == (native_exit == 0)
+    if native_exit:
+        assert '安装子步骤返回错误 7' in text
+
+
+def test_payload_accepts_root_license(tmp_path):
+    archive = tmp_path / 'licensed.zip'
+    package(archive, {'LICENSE': b'GNU license', 'NOTICE.md': b'Attribution'})
+    extract_payload(archive, tmp_path / 'installed')
+    assert (tmp_path / 'installed/LICENSE').read_bytes() == b'GNU license'

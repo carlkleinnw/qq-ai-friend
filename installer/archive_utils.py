@@ -8,7 +8,7 @@ ALLOWED = {'scripts', 'plugins', 'config', 'docs', 'installer'}
 
 
 def is_program_member(member):
-    return (member.parts[0] in ALLOWED or member.as_posix() == 'AI好友.exe'
+    return (member.parts[0] in ALLOWED or member.as_posix() in {'AI好友.exe', 'LICENSE'}
             or (len(member.parts) == 1 and member.suffix in {'.md', '.txt', '.yml', '.json', '.cmd'}))
 
 
