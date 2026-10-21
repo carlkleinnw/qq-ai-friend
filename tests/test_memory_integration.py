@@ -58,6 +58,7 @@ class MemoryIntegrationTests(unittest.IsolatedAsyncioTestCase):
             object(), "验收用户喜欢的面馆是云杉面馆。", note_type="preference"
         )
         self.assertTrue(result.get("ok"), result)
+        return result
 
     async def recall(self, service, context):
         return await service._compose_memory_injection(context, max_chars=3200, write_log=False)
@@ -93,6 +94,28 @@ class MemoryIntegrationTests(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn("蓝鹭馆", first_recall)
         self.assertIn("蓝鹭馆", second_recall)
         self.assertNotIn("银杉馆", second_recall)
+
+    async def test_corrected_memory_replaces_old_recall_and_deleted_memory_stays_absent(self):
+        service = self.make_service()
+        created = await self.remember(service)
+        memory_id = created["memory_id"]
+        self.assertIn("云杉面馆", await self.recall(service, self.context()))
+        self.assertTrue(await service.store.update_memory_payload(
+            memory_id, content="验收用户喜欢的面馆是蓝鹭面馆。",
+        ))
+        corrected = await self.recall(service, self.context())
+        self.assertIn("蓝鹭面馆", corrected)
+        self.assertNotIn("云杉面馆", corrected)
+        service.close()
+        service = self.make_service()
+        self.assertIn("蓝鹭面馆", await self.recall(service, self.context()))
+        self.assertTrue(await service.store.delete_memory(memory_id))
+        self.assertIsNone(await service.store.get_memory(memory_id))
+        service.close()
+        service = self.make_service()
+        deleted = await self.recall(service, self.context())
+        self.assertNotIn("蓝鹭面馆", deleted)
+        self.assertNotIn("云杉面馆", deleted)
 
 
 if __name__ == "__main__":

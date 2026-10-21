@@ -1,0 +1,38 @@
+{
+  "checked_at": "2026-10-21T04:46:19.299469+00:00",
+  "framework": "AstrBot 4.29.1 / memory_companion v2.3.1 native legacy panel and memory service",
+  "checks": {
+    "browser_search_detail_edit_delete": true,
+    "edit_preserved_visibility_and_lifecycle": true,
+    "qq_new_conversation_recalled_corrected_current_value": true,
+    "other_qq_bot_recall_empty": true,
+    "deleted_record_detail_404": true,
+    "qq_new_conversation_after_deletion_recall_empty": true,
+    "test_memory_records_cleaned_up": true,
+    "real_store_correction_deletion_survive_reopen": true,
+    "original_vendor_unchanged": true
+  },
+  "local_compatibility_fix": {
+    "scope": "Installed legacy editor only; memory engine and ACL unchanged",
+    "cause": "Editor used obsolete visibility/lifecycle options and overwrote existing values on save",
+    "original_sha256": "58b60bb7dcdec230b18e2f3e8c879dd055e6e35cc48bbb37f2f0c1ab786c5c6c",
+    "browser_regression_before": {
+      "failed": 3,
+      "passed": 1
+    },
+    "browser_regression_after": {
+      "passed": 4
+    }
+  },
+  "project_tests": {
+    "passed": 14
+  },
+  "limitations": [
+    "Editing current content preserves original evidence, which can still mention an old value.",
+    "Deleting a memory record does not erase chat history, other sources, or backups; later extraction may recreate facts.",
+    "Current legacy panel verified; modern panel not separately accepted.",
+    "Production service was not restarted in this stage; persistence after correction/deletion tested using the real service with temporary databases.",
+    "Local admin panel can manage all records; per-user QQ recall is a separate boundary.",
+    "Existing upstream test compatibility failures remain documented."
+  ]
+}
