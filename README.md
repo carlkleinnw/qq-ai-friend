@@ -1,5 +1,9 @@
 # QQ AI 好友 0.4.0
 
+[下载安装包](https://github.com/carlkleinnw/qq-ai-friend/releases/latest) · [安装与更新](docs/安装与更新.md) · [贡献指南](CONTRIBUTING.md)
+
+本仓库以 **AGPL-3.0-or-later** 开源，授权范围及第三方例外见 [NOTICE](NOTICE.md) 和 [第三方组件](THIRD_PARTY.md)。陪伴、记忆插件从原仓库下载；本仓库的许可证不改变其原有授权，不能据此推断完整依赖链均可自由再分发。
+
 普通用户使用 Windows 安装包，双击选择安装位置，自动准备独立环境。安装包不包含开发者的 Key、QQ 凭据、聊天和人设数据。完整步骤见 [安装与更新](docs/安装与更新.md)。
 
 ## 安装版的使用与维护

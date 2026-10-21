@@ -26,7 +26,7 @@ def build(version, compiler, conda, output):
                          if file.is_file() and not any(part in {'__pycache__', '.git', '.pytest_cache'} for part in file.parts)
                          and file.suffix not in {'.pyc', '.log'} and not file.name.endswith('.local.json')
                          and not file.name.startswith('.env')]
-    source_files += [ROOT / name for name in ['README.md', 'THIRD_PARTY.md', 'requirements.lock.txt', 'environment.yml', 'upstream.lock.json', '交付说明_稳定版.md']]
+    source_files += [ROOT / name for name in ['README.md', 'LICENSE', 'NOTICE.md', 'CONTRIBUTING.md', 'THIRD_PARTY.md', 'requirements.lock.txt', 'environment.yml', 'upstream.lock.json', '交付说明_稳定版.md']]
     source_files += list(ROOT.glob('*.cmd'))
     files = {}
     for file in sorted(source_files):
