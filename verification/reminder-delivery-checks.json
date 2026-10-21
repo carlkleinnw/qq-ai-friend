@@ -1,0 +1,38 @@
+{
+  "checked_at": "2026-10-21T04:29:26.823929+00:00",
+  "checks": {
+    "chat_created_once": true,
+    "chat_created_recurring": true,
+    "chat_canceled_recurring": true,
+    "cancel_preserved_once": true,
+    "restart_restored_task": true,
+    "correct_target_bot": true,
+    "creator_saved": true,
+    "gpt_phone_received_scheduled_reminder": true,
+    "fish_phone_received_scheduled_reminder": true,
+    "each_reminder_one_send_tool_call": true,
+    "browser_management_panel_opened": true,
+    "no_test_tasks_left": true
+  },
+  "framework": "AstrBot 4.29.1 native future_task / CronJobManager / QQ WebSocket",
+  "delivery_evidence": {
+    "gpt": {
+      "scheduled_local": "2026-10-21T12:25:00+08:00",
+      "send_tool_ack_local": "2026-10-21T12:25:02.713+08:00"
+    },
+    "fish": {
+      "scheduled_local": "2026-10-21T12:28:00+08:00",
+      "send_tool_ack_local": "2026-10-21T12:28:01.466+08:00"
+    },
+    "note": "Phone receipts verified from chat pages; API acknowledgement timestamps are not exact handset arrival times."
+  },
+  "project_tests": {
+    "passed": 9
+  },
+  "limitations": [
+    "Relative times use minute-resolution model clock.",
+    "Offline delivery and failed one-time task retry are not guaranteed.",
+    "Quiet hours and complex recurrence are outside this acceptance.",
+    "Prior upstream test compatibility failures remain recorded in the main acceptance document."
+  ]
+}

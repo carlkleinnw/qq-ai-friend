@@ -1,0 +1,23 @@
+{
+  "checked_at": "2026-10-21T04:29:26.982489+00:00",
+  "personas": {
+    "qq-friend": {
+      "future_task_allowed": true,
+      "send_message_allowed": true,
+      "cron_tools_enabled": true,
+      "china_timezone": true
+    },
+    "gpt-lord": {
+      "future_task_allowed": true,
+      "send_message_allowed": true,
+      "cron_tools_enabled": true,
+      "china_timezone": true
+    }
+  },
+  "task_counts": {
+    "total": 0,
+    "enabled": 0,
+    "one_time": 0
+  },
+  "ready": true
+}
