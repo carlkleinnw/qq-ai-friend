@@ -3,6 +3,8 @@ from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock
+from unittest.mock import AsyncMock
+import json
 import time
 
 import pytest
@@ -90,6 +92,113 @@ class PersonaIntegrationTests(unittest.IsolatedAsyncioTestCase):
             self.assertTrue(pack(preset['bio'], preset['prompt']))
         self.assertEqual(before, await self.plugin.snapshot('bot-a'))
 
+    async def test_new_qq_bot_can_discover_presets_and_custom_help_before_sync(self):
+        original = await self.plugin.snapshot('bot-a')
+        self.plugin.config['bots'] = []
+        command = self.plugin.qq_commands.execute
+        menu = await command(self.qq_event('/人设'))
+        for preset in self.plugin.presets:
+            self.assertIn(preset['name'], menu)
+        self.assertIn('/自定义人设', menu)
+        self.assertIn('同步 QQ 机器人', menu)
+        help_text = await command(self.qq_event('/自定义人设'))
+        self.assertIn('请在指令后填写内容', help_text)
+        self.assertEqual({}, self.plugin.qq_commands.pending)
+        self.assertEqual(original['prompt'], unpack((await self.manager.get_persona('friend-a')).system_prompt)[1])
+
+    async def test_public_qq_help_does_not_authorize_writes_or_reveal_current_persona(self):
+        command = self.plugin.qq_commands.execute
+        self.assertIn('体贴甜蜜女友', await command(self.qq_event('/预设人设', sender='stranger')))
+        self.assertIn('尚未获得', await command(self.qq_event('/人设 5', sender='stranger')))
+        self.assertIn('尚未获得', await command(self.qq_event('/自定义人设 修改', sender='stranger')))
+        self.assertIn('尚未获得', await command(self.qq_event('/当前人设', sender='stranger')))
+        self.assertEqual({}, self.plugin.qq_commands.pending)
+
+    async def test_custom_menu_waits_for_same_private_sender_then_previews_without_saving(self):
+        self.allow_qq_owner()
+        before = await self.plugin.snapshot('bot-a')
+        commands = self.plugin.qq_commands
+        self.assertIn('下一条文字', await commands.execute(self.qq_event('/自定义人设')))
+        self.assertIsNone(await commands.consume_custom(self.qq_event('普通聊天', sender='other')))
+        self.assertIsNone(await commands.consume_custom(self.qq_event('普通聊天', bot='bot-b')))
+        self.assertIn('待确认：自定义人设', await commands.consume_custom(self.qq_event('温柔细心，尊重我的空间。')))
+        self.assertEqual(before, await self.plugin.snapshot('bot-a'))
+        self.assertIn('已保存', await commands.execute(self.qq_event('/确认人设')))
+        self.assertEqual('温柔细心，尊重我的空间。', (await self.plugin.snapshot('bot-a'))['prompt'])
+
+    async def test_custom_input_cancel_expiry_and_unrelated_commands_do_not_capture_normal_chat(self):
+        self.allow_qq_owner()
+        commands = self.plugin.qq_commands
+        await commands.execute(self.qq_event('/自定义人设'))
+        await commands.execute(self.qq_event('/取消人设'))
+        self.assertIsNone(await commands.consume_custom(self.qq_event('普通聊天')))
+        await commands.execute(self.qq_event('/自定义人设'))
+        self.assertIsNone(await commands.consume_custom(self.qq_event('/new')))
+        self.assertIsNone(await commands.consume_custom(self.qq_event('普通聊天')))
+        await commands.execute(self.qq_event('/自定义人设'))
+        normalized = self.qq_event('new')
+        normalized.message_obj = SimpleNamespace(message_str='/new')
+        self.assertIsNone(await commands.consume_custom(normalized))
+        self.assertIsNone(await commands.consume_custom(self.qq_event('普通聊天')))
+        await commands.execute(self.qq_event('/自定义人设'))
+        commands.waiting_custom[('bot-a:FriendMessage:owner', 'owner')]['expires'] = time.monotonic() - 1
+        self.assertIsNone(await commands.consume_custom(self.qq_event('普通聊天')))
+
+    async def test_named_custom_preset_uses_native_persona_store_and_survives_reload(self):
+        saved = Path(self.directory.name) / 'preset-config.json'
+        class Config(dict):
+            def save_config(config):
+                saved.write_text(json.dumps(config), encoding='utf-8')
+        self.plugin.config = Config(self.plugin.config)
+        self.plugin.publish_qq_menu = AsyncMock(return_value={'changed': True})
+        before = await self.plugin.snapshot('bot-a')
+        other = await self.plugin.snapshot('bot-b')
+        result = await self.plugin.save_preset({'name': '贴心搭子', 'bio': '认真听你说话。', 'prompt': '温和简短，不连续追问。'})
+        self.assertEqual(6, len(result['presets']))
+        self.assertEqual([], result['menu_sync_errors'])
+        self.assertEqual(2, self.plugin.publish_qq_menu.await_count)
+        self.assertEqual(before, await self.plugin.snapshot('bot-a'))
+        self.assertEqual(other, await self.plugin.snapshot('bot-b'))
+        reference = self.plugin.config['custom_presets'][0]
+        native = await self.manager.get_persona(reference['persona_id'])
+        self.assertEqual(['认真听你说话。', '温和简短，不连续追问。'], unpack(native.system_prompt))
+        await self.manager.initialize()
+        reloaded = PersonaStudio(self.context, Config(json.loads(saved.read_text(encoding='utf-8'))))
+        self.assertEqual(result['preset_id'], (await reloaded.get_presets())[-1]['id'])
+        self.allow_qq_owner()
+        self.assertIn('待确认：贴心搭子', await self.plugin.qq_commands.execute(self.qq_event('/人设 ' + result['preset_id'])))
+        self.assertEqual(before, await self.plugin.snapshot('bot-a'))
+        self.assertIn('已保存', await self.plugin.qq_commands.execute(self.qq_event('/确认人设')))
+        self.assertEqual('温和简短，不连续追问。', (await self.plugin.snapshot('bot-a'))['prompt'])
+
+    async def test_template_name_validation_and_menu_failure_do_not_lose_saved_preset(self):
+        class Config(dict):
+            def save_config(config):
+                pass
+        self.plugin.config = Config(self.plugin.config)
+        self.plugin.publish_qq_menu = AsyncMock(side_effect=ValueError('Menu full'))
+        for name in ['', 'a' * 15, '坏\n名字', self.plugin.presets[0]['name']]:
+            with self.assertRaises(ValueError):
+                await self.plugin.save_preset({'name': name, 'bio': '', 'prompt': '保持礼貌。'})
+        before = await self.plugin.snapshot('bot-a')
+        result = await self.plugin.save_preset({'name': '测试搭子', 'bio': '', 'prompt': '保持礼貌。'})
+        self.assertEqual(2, len(result['menu_sync_errors']))
+        self.assertEqual('测试搭子', (await self.plugin.get_presets())[-1]['name'])
+        self.assertEqual(before, await self.plugin.snapshot('bot-a'))
+        with self.assertRaisesRegex(ValueError, '同名'):
+            await self.plugin.save_preset({'name': '测试搭子', 'bio': '', 'prompt': '不要覆盖。'})
+
+    async def test_preset_index_save_failure_rolls_back_only_the_new_template(self):
+        class Config(dict):
+            def save_config(config):
+                raise OSError('fixture disk failure')
+        self.plugin.config = Config(self.plugin.config)
+        before = await self.db.get_personas()
+        with self.assertRaises(OSError):
+            await self.plugin.save_preset({'name': '不会保存', 'bio': '', 'prompt': '保持礼貌。'})
+        self.assertEqual([], self.plugin.config['custom_presets'])
+        self.assertEqual({p.persona_id for p in before}, {p.persona_id for p in await self.db.get_personas()})
+
     def qq_event(self, text, bot='bot-a', sender='owner', scope=None, private=True, admin=False):
         return SimpleNamespace(get_message_str=lambda: text, get_platform_id=lambda: bot,
                                get_sender_id=lambda: sender, is_admin=lambda: admin,
@@ -161,7 +270,7 @@ class PersonaIntegrationTests(unittest.IsolatedAsyncioTestCase):
         command = self.plugin.qq_commands.execute
         original = await self.plugin.snapshot('bot-a')
         self.assertIn('未找到', await command(self.qq_event('/人设 99')))
-        self.assertIn('请在指令后', await command(self.qq_event('/自定义人设')))
+        self.assertIn('下一条文字', await command(self.qq_event('/自定义人设')))
         self.assertIn('20000', await command(self.qq_event('/自定义人设 ' + 'x' * 20001)))
         self.assertEqual(original, await self.plugin.snapshot('bot-a'))
 

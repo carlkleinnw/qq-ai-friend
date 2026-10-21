@@ -27,7 +27,7 @@
             <label for="preset">人设预设</label>
             <select id="preset"></select>
             <p id="preset-description" class="hint"></p>
-            <div class="actions"><button id="load-preset" type="button">载入预设</button><button id="custom" type="button">自己设计</button></div>
+            <div class="actions"><button id="load-preset" type="button">载入预设</button><button id="custom" type="button">新建自定义预设</button></div>
             <h2>从 QQ 简介开始</h2>
             <p class="hint">把 QQ 中的个人简介粘贴到右侧即可，也可以只填写简介。预设简介可以自由修改。</p>
             <p class="hint">当前接入支持手动复制与粘贴，尚不支持自动读写 QQ 资料。</p>
@@ -49,6 +49,30 @@
         </div>
       </fieldset>
     </form>
+    <dialog id="custom-dialog" aria-labelledby="custom-title" aria-describedby="custom-description">
+      <form id="custom-form">
+        <fieldset id="custom-fields">
+          <h2 id="custom-title">新建自定义预设</h2>
+          <p id="custom-description" class="hint">保存到预设并同步至 QQ 菜单。当前机器人的人设不会自动替换。</p>
+          <p id="custom-bot" class="hint"></p>
+          <div id="custom-inputs">
+            <label for="custom-name">人设名称 <span class="optional">最多七个汉字或十四个英文字母</span></label>
+            <input id="custom-name" maxlength="14" autocomplete="off" placeholder="例如：贴心搭子">
+            <label for="custom-bio">个人简介 <span class="optional">可选</span></label>
+            <textarea id="custom-bio" rows="3" maxlength="1000" placeholder="例如：温柔细心，也尊重彼此的空间。"></textarea>
+            <label for="custom-prompt" class="prompt-label">详细人设</label>
+            <textarea id="custom-prompt" rows="9" maxlength="20000" placeholder="背景、性格、说话方式，以及你希望它注意的事。"></textarea>
+          </div>
+          <section id="custom-review" hidden aria-label="人设预览"><h3>确认这份人设</h3><pre id="custom-preview-text"></pre></section>
+          <p id="custom-status" role="status" aria-live="polite"></p>
+          <footer>
+            <button id="custom-next" type="submit" class="primary">预览人设</button>
+            <button id="custom-back" type="button" hidden>返回修改</button>
+            <button id="custom-cancel" type="button">取消</button>
+          </footer>
+        </fieldset>
+      </form>
+    </dialog>
   </main>
   <script type="module" src="./app.js"></script>
 </body>

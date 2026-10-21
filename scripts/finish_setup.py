@@ -81,7 +81,10 @@ def main():
         guard = checked(client.get(endpoint))['config']
         guard['bot_ids'] = list(dict.fromkeys([*guard.get('bot_ids', []), *targets]))
         checked(client.put(endpoint, json={'config': guard}))
-    print(f'已同步 {len(bots)} 个 QQ 机器人。请先发送 /sid，再在维护窗口授权自己的私聊，即可在 QQ 里选人设。')
+        for bot in bots:
+            checked(client.post('/api/v1/plugins/extensions/astrbot_plugin_persona_studio/qq-menu',
+                                json={'bot_id': bot['id']}))
+    print(f'已同步 {len(bots)} 个 QQ 机器人并配置底部人设菜单。重新打开 QQ 私聊查看；请发 /sid 并在维护窗口授权自己，才能保存人设。')
 
 
 if __name__ == '__main__':

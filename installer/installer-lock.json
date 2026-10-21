@@ -1,5 +1,5 @@
 {
-  "version": "0.4.1",
+  "version": "0.4.2",
   "data_format": "astrbot-4.29.1-v1",
   "conda_standalone": {
     "version": "26.7.0",
