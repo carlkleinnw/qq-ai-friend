@@ -1,4 +1,5 @@
 {
   "bots": {"type": "list", "description": "可编辑的机器人", "hint": "每项包含 bot_id 与 name；机器人路由仍由原生配置管理。", "default": []},
-  "qq_editor_sessions": {"type": "list", "description": "允许在 QQ 编辑人设的私聊", "hint": "填写完整私聊 UMO（可用 /sid 查看）。权限只限人设指令，不会授予其他管理员能力；管理员也可使用。", "default": []}
+  "qq_editor_sessions": {"type": "list", "description": "允许在 QQ 编辑人设的私聊", "hint": "填写完整私聊 UMO（可用 /sid 查看）。权限只限人设指令，不会授予其他管理员能力；管理员也可使用。", "default": []},
+  "custom_presets": {"type": "list", "description": "自定义预设索引", "hint": "由人设表单维护；名称和原生人格引用保存在这里，设定内容保存在 AstrBot 原生人格数据库。", "default": []}
 }

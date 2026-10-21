@@ -4,6 +4,8 @@ let current = null;
 let presets = [];
 let pendingAction = null;
 let busy = false;
+let customBase = null;
+let customReview = false;
 const changed = () => current && ($('bio').value !== current.bio || $('prompt').value !== current.prompt);
 function status(message, error = false) {
   $('status').textContent = message;
@@ -32,11 +34,11 @@ function setBusy(value) {
   $('bot').disabled = value;
   $('save').textContent = value ? '处理中…' : '保存人设';
 }
-async function call(operation) {
+async function call(operation, timeout = 20000) {
   let timer;
   try {
     const result = await Promise.race([operation, new Promise((_, reject) => {
-      timer = setTimeout(() => reject(new Error('等待超时，请保留草稿并重新读取，核对是否已保存。')), 20000);
+      timer = setTimeout(() => reject(new Error('等待超时，请保留草稿并重新读取，核对是否已保存。')), timeout);
     })]);
     if (result?.status === 'error') throw new Error(result.message);
     return result;
@@ -77,11 +79,79 @@ $('load-preset').onclick = () => guard(() => {
     $('bio').focus();
   }
 });
-$('custom').onclick = () => guard(() => {
-  fill('', '');
-  status('开始自定义。可以只填写简介，也可以详细描述背景、性格和说话方式。');
-  $('bio').focus();
-});
+$('custom').onclick = () => {
+  if (!current || busy) return;
+  customBase = {...current};
+  $('custom-name').value = '';
+  $('custom-bio').value = '';
+  $('custom-prompt').value = '';
+  $('custom-bot').textContent = '预设可以重复使用，保存后仍需选择并确认才会应用。';
+  $('custom-status').textContent = '';
+  customStep(false);
+  $('custom-dialog').showModal();
+  $('custom-name').focus();
+};
+function customStep(review) {
+  customReview = review;
+  $('custom-inputs').hidden = review;
+  $('custom-review').hidden = !review;
+  $('custom-back').hidden = !review;
+  $('custom-next').textContent = review ? '保存到预设' : '预览人设';
+}
+function closeCustom() {
+  if (busy) return;
+  $('custom-dialog').close();
+  customBase = null;
+  $('custom').focus();
+}
+$('custom-cancel').onclick = closeCustom;
+$('custom-dialog').oncancel = (event) => {
+  event.preventDefault();
+  closeCustom();
+};
+$('custom-back').onclick = () => { customStep(false); $('custom-prompt').focus(); };
+$('custom-form').onsubmit = async (event) => {
+  event.preventDefault();
+  if (busy || !customBase) return;
+  const name = $('custom-name').value.trim();
+  const bio = $('custom-bio').value;
+  const prompt = $('custom-prompt').value;
+  if (!name || [...name].reduce((size, char) => size + (char.codePointAt(0) > 127 ? 2 : 1), 0) > 14) {
+    $('custom-status').textContent = '请填写名称，最多七个汉字或十四个英文字母。';
+    $('custom-name').focus();
+    return;
+  }
+  if (!bio.trim() && !prompt.trim()) {
+    $('custom-status').textContent = '请至少填写简介或详细人设。';
+    $('custom-prompt').focus();
+    return;
+  }
+  if (!customReview) {
+    $('custom-status').textContent = '';
+    $('custom-preview-text').textContent = `名称：${name}\n\n` + (bio ? `简介：${bio}\n\n` : '') + prompt;
+    customStep(true);
+    $('custom-next').focus();
+    return;
+  }
+  setBusy(true);
+  $('custom-fields').disabled = true;
+  $('custom-status').textContent = '正在保存预设并同步 QQ 菜单…';
+  try {
+    const result = await call(bridge.apiPost('presets', {name, bio, prompt}), 90000);
+    updatePresets(result.presets, result.preset_id);
+    $('custom-dialog').close();
+    customBase = null;
+    status(result.menu_sync_errors?.length ?
+      '预设已保存，QQ 菜单同步尚未完成；可从维护窗口重试“同步 QQ 机器人”。当前人设未切换。' :
+      '已加入预设并同步 QQ 菜单。重新打开 QQ 私聊可查看；选择并确认后才会应用。');
+  } catch (error) {
+    $('custom-status').textContent = `保存未确认，内容已保留。${String(error.message || error).slice(0, 180)}`;
+  } finally {
+    $('custom-fields').disabled = false;
+    setBusy(false);
+    if (!$('custom-dialog').open) $('custom').focus();
+  }
+};
 $('reload').onclick = () => guard(() => load(current.bot_id));
 $('copy-bio').onclick = async () => {
   try {
@@ -108,16 +178,22 @@ $('editor').onsubmit = async (event) => {
     status(`保存未确认：${String(error.message || error).slice(0, 220)}。草稿已保留。`, true);
   } finally { setBusy(false); }
 };
+function updatePresets(items, selected) {
+  presets = items;
+  $('preset').replaceChildren(...items.map((p) => new Option(p.name, p.id)));
+  if (selected) $('preset').value = selected;
+  $('preset').onchange();
+}
 window.addEventListener('beforeunload', (event) => {
-  if (changed()) { event.preventDefault(); event.returnValue = ''; }
+  if (changed() || ($('custom-dialog').open && ($('custom-name').value || $('custom-bio').value || $('custom-prompt').value))) {
+    event.preventDefault(); event.returnValue = '';
+  }
 });
 try {
   await bridge.ready();
   const data = await call(bridge.apiGet('state'));
-  presets = data.presets;
   for (const bot of data.bots) $('bot').add(new Option(bot.name, bot.bot_id));
-  for (const preset of presets) $('preset').add(new Option(preset.name, preset.id));
-  $('preset').onchange();
+  updatePresets(data.presets);
   if (data.bots.length) await load(data.bots[0].bot_id);
   else status('尚未配置可编辑的机器人。请先在面板扫码保存 QQ，再到“维护与更新”点击“同步 QQ 机器人”。');
 } catch (error) {

@@ -2,6 +2,10 @@
 
 本项目以现成组件配置和组合为主，未重写其对话、记忆、平台或调度实现。
 
+0.4.2 的 QQ 底部人设菜单使用已安装 botpy SDK 的 HTTP 客户端、AstrBot 原生鉴权插件 API 和 QQ 官方 `/v2/menu` 接口，未增加依赖或复制第三方菜单插件。结构和限制见 [官方查询文档](https://bot.q.qq.com/wiki/develop/api-v2/autogen/api/v2_menu.get.html) 及 [官方修改文档](https://bot.q.qq.com/wiki/develop/api-v2/autogen/api/v2_menu.put.html)。只扩展本项目的人设菜单，保留其他已有菜单；人设保存仍走原生人格与既有私聊授权。
+
+具名自定义预设继续复用 AstrBot PersonaManager：设定内容存入原生人格表，名称及引用由原生插件配置保存。网页输入窗口使用浏览器内置 dialog；未引入独立数据库、表单框架、外部网页服务或公网访问入口。新增预设同步到 QQ 官方菜单，每五项分组，保持已有无关菜单和用户编辑权限。
+
 本项目自身授权见 [LICENSE](LICENSE) 和 [NOTICE](NOTICE.md)。第三方代码、二进制及服务保持各自条款，本项目的 AGPL 声明不替代其授权。
 
 0.4.0 的 Windows 安装器复用 NSIS Modern UI 2、官方 conda-standalone 26.7.0 和 Windows 自带 .NET Framework。Conda 可执行文件采用固定 SHA256，许可证和依赖许可证保留在 installer/licenses。上游陪伴 / 记忆插件从原始仓库按固定提交下载并校验，不嵌入安装 EXE。安装器不代表上游插件获得新的分发授权。构建、来源与升级约定见 installer/README.md。

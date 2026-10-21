@@ -1,7 +1,7 @@
 name: astrbot_plugin_persona_studio
 display_name: AI好友人设
 desc: 为独立机器人选择可编辑预设或自定义人设，保存到 AstrBot 原生人格。
-version: v0.2.0
+version: v0.3.0
 author: Local AI Friend Project
-repo: ""
+repo: "https://github.com/carlkleinnw/qq-ai-friend"
 astrbot_version: ">=4.29.1,<4.30"
