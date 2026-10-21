@@ -84,7 +84,7 @@ class PersonaIntegrationTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_presets_are_drafts_not_automatic_mutations(self):
         before = await self.plugin.snapshot('bot-a')
-        self.assertEqual(4, len(self.plugin.presets))
+        self.assertEqual(5, len(self.plugin.presets))
         for preset in self.plugin.presets:
             self.assertTrue(pack(preset['bio'], preset['prompt']))
         self.assertEqual(before, await self.plugin.snapshot('bot-a'))
