@@ -1,0 +1,50 @@
+{
+  "checked_at": "2026-10-21T13:45:51.935846+08:00",
+  "duration_seconds": 60.0,
+  "all_samples_healthy": true,
+  "samples": [
+    {
+      "elapsed_seconds": 0.2,
+      "dashboard_available": true,
+      "first_adapter_running": true,
+      "second_adapter_running": true
+    },
+    {
+      "elapsed_seconds": 10.2,
+      "dashboard_available": true,
+      "first_adapter_running": true,
+      "second_adapter_running": true
+    },
+    {
+      "elapsed_seconds": 20.2,
+      "dashboard_available": true,
+      "first_adapter_running": true,
+      "second_adapter_running": true
+    },
+    {
+      "elapsed_seconds": 30.2,
+      "dashboard_available": true,
+      "first_adapter_running": true,
+      "second_adapter_running": true
+    },
+    {
+      "elapsed_seconds": 40.2,
+      "dashboard_available": true,
+      "first_adapter_running": true,
+      "second_adapter_running": true
+    },
+    {
+      "elapsed_seconds": 50.2,
+      "dashboard_available": true,
+      "first_adapter_running": true,
+      "second_adapter_running": true
+    },
+    {
+      "elapsed_seconds": 60.0,
+      "dashboard_available": true,
+      "first_adapter_running": true,
+      "second_adapter_running": true
+    }
+  ],
+  "scope": "Local API and native adapter process state; not an end-to-end phone delivery or 24-hour uptime guarantee."
+}

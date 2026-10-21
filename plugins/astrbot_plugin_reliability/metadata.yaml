@@ -1,0 +1,6 @@
+name: astrbot_plugin_reliability
+display_name: AI好友消息防重
+desc: 按消息ID防止QQ重投递造成重复处理，使用原生事件钩子与SQLite唯一约束。
+version: v0.1.0
+author: Local AI Friend Project
+repo: ""

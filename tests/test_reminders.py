@@ -64,6 +64,101 @@ class ReminderStoreTests(unittest.IsolatedAsyncioTestCase):
         trigger = self.manager._build_trigger(persisted)
         self.assertEqual("Asia/Shanghai", str(trigger.timezone))
 
+    async def test_failed_once_is_retained_disabled_after_restart_without_resending(self):
+        job = await self.manager.add_active_job(
+            name="failure-fixture", cron_expression=None, run_once=True,
+            run_at=datetime.now(timezone.utc) + timedelta(days=1),
+            payload={"session": "bot-a:FriendMessage:user-a"},
+        )
+        self.manager._run_active_agent_job = AsyncMock(side_effect=ConnectionError("fixture delivery failed"))
+        await self.manager._run_job(job.job_id)
+        failed = await self.db.get_cron_job(job.job_id)
+        self.assertIsNotNone(failed)
+        self.assertEqual(failed.status, "failed")
+        self.assertIn("fixture delivery failed", failed.last_error)
+        self.assertFalse(failed.enabled)
+        self.assertIsNone(self.manager.get_next_run_time(job.job_id))
+        await self.manager.shutdown()
+        self.manager = CronJobManager(self.db)
+        await self.manager.start(SimpleNamespace())
+        self.manager._run_active_agent_job = AsyncMock()
+        await self.manager._run_job(job.job_id)
+        self.manager._run_active_agent_job.assert_not_awaited()
+        self.assertFalse((await self.db.get_cron_job(job.job_id)).enabled)
+        await self.manager.delete_job(job.job_id)
+
+    async def test_successful_once_still_removed_after_execution(self):
+        job = await self.manager.add_active_job(
+            name="success-fixture", cron_expression=None, run_once=True,
+            run_at=datetime.now(timezone.utc) + timedelta(days=1), payload={},
+        )
+        self.manager._run_active_agent_job = AsyncMock()
+        await self.manager._run_job(job.job_id)
+        self.manager._run_active_agent_job.assert_awaited_once()
+        self.assertIsNone(await self.db.get_cron_job(job.job_id))
+
+    async def test_cancelled_execution_is_not_recorded_as_success(self):
+        job = await self.manager.add_active_job(
+            name="cancel-fixture", cron_expression=None, run_once=True,
+            run_at=datetime.now(timezone.utc) + timedelta(days=1), payload={},
+        )
+        entered = asyncio.Event()
+        async def wait_until_cancelled(*args, **kwargs):
+            entered.set()
+            await asyncio.Event().wait()
+        self.manager._run_active_agent_job = wait_until_cancelled
+        task = asyncio.create_task(self.manager._run_job(job.job_id))
+        await asyncio.wait_for(entered.wait(), timeout=2)
+        task.cancel()
+        with self.assertRaises(asyncio.CancelledError):
+            await task
+        stored = await self.db.get_cron_job(job.job_id)
+        self.assertEqual(stored.status, "failed")
+        self.assertFalse(stored.enabled)
+
+    async def test_restart_does_not_replay_an_interrupted_once(self):
+        job = await self.manager.add_active_job(
+            name="interrupted-fixture", cron_expression=None, run_once=True,
+            run_at=datetime.now(timezone.utc) + timedelta(days=1), payload={},
+        )
+        await self.db.update_cron_job(job.job_id, status="running")
+        await self.manager.shutdown()
+        self.manager = CronJobManager(self.db)
+        await self.manager.start(SimpleNamespace())
+        stored = await self.db.get_cron_job(job.job_id)
+        self.assertEqual(stored.status, "failed")
+        self.assertFalse(stored.enabled)
+        self.assertIsNone(self.manager.get_next_run_time(job.job_id))
+
+    async def test_offline_missed_once_is_visible_as_failure_after_grace(self):
+        job = await self.manager.add_active_job(
+            name="missed-fixture", cron_expression=None, run_once=True, enabled=False,
+            run_at=datetime.now(timezone.utc) - timedelta(minutes=10), payload={},
+        )
+        await self.db.update_cron_job(job.job_id, enabled=True)
+        await self.manager.shutdown()
+        self.manager = CronJobManager(self.db)
+        await self.manager.start(SimpleNamespace())
+        stored = await self.db.get_cron_job(job.job_id)
+        self.assertEqual(stored.status, "failed")
+        self.assertFalse(stored.enabled)
+        self.assertIn("Missed while offline", stored.last_error)
+
+    async def test_malformed_legacy_once_does_not_block_other_jobs_at_startup(self):
+        valid = await self.manager.add_active_job(
+            name="valid-after-malformed", cron_expression=None, run_once=True,
+            run_at=datetime.now(timezone.utc) + timedelta(days=1), payload={},
+        )
+        malformed = await self.db.create_cron_job(
+            name="malformed", job_type="active_agent", cron_expression=None,
+            run_once=True, payload={"run_at": "not-a-date"}, enabled=True, persistent=True,
+        )
+        await self.manager.shutdown()
+        self.manager = CronJobManager(self.db)
+        await self.manager.start(SimpleNamespace())
+        self.assertIsNotNone(self.manager.get_next_run_time(valid.job_id))
+        self.assertIsNone(self.manager.get_next_run_time(malformed.job_id))
+
 
 class ReminderOwnershipTests(unittest.IsolatedAsyncioTestCase):
     async def test_chat_cannot_cancel_another_bot_or_another_members_reminder(self):

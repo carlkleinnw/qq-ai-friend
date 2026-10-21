@@ -15,3 +15,7 @@
 2026-10-21：对已安装 memory_companion v2.3.1 的传统面板做了一处本地兼容修复，纠正编辑表单的权限、生命周期选项并保留未知值。原始 vendor 检出未修改；可审阅、重复执行的修复在 `scripts/repair_memory_panel.py`，具体原因与验证见 `docs/记忆管理.md`。未修改其记忆引擎或权限策略，源码包仍不包含插件源码。
 
 大肥鱼表达风格参考 ERUIHNIYHBKBNF 的 [dafeiyu-persona](https://github.com/ERUIHNIYHBKBNF/dafeiyu-persona)（仓库标注 MIT）。只借鉴社区角色特征，自行编写短提示词和示例，未安装该 skill 或打包其源码。声音使用现有 edge-tts 与 AstrBot 原生适配器，不包含视频原声、第三方录音或新声音模型。
+
+0.1.1 本机稳定性修复对已安装 AstrBot 4.29.1 的 Edge TTS 超时、原生一次性提醒失败保留与启动恢复、原生备份提醒表覆盖做了最小修改。固定原文件摘要与可复查替换规则分别在 repair_tts_timeout.py、repair_cron_failure.py、repair_backup_coverage.py；原文件在 runtime/backups。继续使用原有重试、调度、导入导出和 SDK，不分发完整第三方源码。新增消息防重插件是本项目的原生事件钩子，使用标准库 SQLite 唯一约束；启停锁复用已锁定的 filelock，未增加依赖。
+
+指定上游测试的兼容检查在私有副本进行，原始检出和生产陪伴插件未修改；四个经审查的事件局部/生命周期钩子用 AST 摘要固定，避免以后误用同一排除结论。具体修正和结果见 scripts/check_upstream_compat.py 与 docs/稳定性验收.md。

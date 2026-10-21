@@ -1,0 +1,14 @@
+{
+  "checked_at": "2026-10-21T13:44:58.305678",
+  "archive_sha256": "4de44ae53992daa0831e09fd27ef5549064ea6bb5a3b0ea2ae13a688a1d750c0",
+  "native_import_succeeded": true,
+  "reexport_rows_equal": true,
+  "tables": 14,
+  "rows": 32,
+  "files_identical": 1464,
+  "sqlite_integrity_checks": 10,
+  "bots_started_in_restore_directory": false,
+  "source_files_verified": 1463,
+  "reminder_table_included": true,
+  "live_data_overwritten": false
+}

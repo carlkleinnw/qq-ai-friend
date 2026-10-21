@@ -5,6 +5,7 @@ import argparse
 import json
 import os
 import subprocess
+import socket
 import sys
 import time
 import urllib.error
@@ -13,6 +14,7 @@ import webbrowser
 from pathlib import Path
 
 import psutil
+from filelock import FileLock
 
 ROOT = Path(__file__).resolve().parents[1]
 RUNTIME = ROOT / "runtime"
@@ -50,7 +52,10 @@ def ready() -> bool:
 def start(open_browser: bool = True) -> None:
     process = managed_process()
     if not process:
-        if ready():
+        with socket.socket() as probe:
+            probe.settimeout(1)
+            occupied = probe.connect_ex(("127.0.0.1", 6185)) == 0
+        if occupied:
             raise RuntimeError("Port 6185 belongs to another instance. No process was stopped.")
         environment = os.environ.copy()
         environment.update({
@@ -71,7 +76,7 @@ def start(open_browser: bool = True) -> None:
             )
         process = psutil.Process(child.pid)
         STATE.write_text(json.dumps({"pid": process.pid, "created": process.create_time()}), encoding="utf-8")
-    for _ in range(90):
+    for _ in range(240):
         if ready():
             print("AI friend is ready: " + URL)
             if open_browser:
@@ -88,9 +93,14 @@ def main() -> None:
     parser.add_argument("action", choices=["start", "stop", "status"], nargs="?", default="start")
     parser.add_argument("--no-browser", action="store_true")
     args = parser.parse_args()
-    if args.action == "start":
-        start(not args.no_browser)
-    elif args.action == "stop":
+    with FileLock(str(RUNTIME / "service.lock"), timeout=150):
+        run_action(args.action, not args.no_browser)
+
+
+def run_action(action: str, open_browser: bool = True) -> None:
+    if action == "start":
+        start(open_browser)
+    elif action == "stop":
         process = managed_process()
         if process:
             process.terminate()

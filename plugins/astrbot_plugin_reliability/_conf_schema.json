@@ -1,0 +1,3 @@
+{
+  "bot_ids": {"description": "启用消息防重的机器人实例", "type": "list", "default": []}
+}

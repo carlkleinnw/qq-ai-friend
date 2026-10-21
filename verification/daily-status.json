@@ -1,0 +1,22 @@
+{
+  "checked_at": "2026-10-21T17:41:07.859610",
+  "dashboard_ready": true,
+  "disk_free_gib": 46.5,
+  "managed_process_running": true,
+  "latest_backup_at": "2026-10-21T13:42:04.991118",
+  "bots": [
+    {
+      "name": "大肥鱼",
+      "adapter_status": "running"
+    },
+    {
+      "name": "GPT大人",
+      "adapter_status": "running"
+    }
+  ],
+  "dafeiyu_voice_enabled": true,
+  "dafeiyu_retry_attempts": 2,
+  "model_key_present": true,
+  "model_network_timeout_seconds": 25,
+  "failed_reminders": 0
+}

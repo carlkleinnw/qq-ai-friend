@@ -4,6 +4,12 @@
     "repository": "https://github.com/AstrBotDevs/AstrBot",
     "distribution": "PyPI wheel"
   },
+  "local_runtime_repairs": [
+    "scripts/repair_memory_panel.py",
+    "scripts/repair_tts_timeout.py",
+    "scripts/repair_cron_failure.py",
+    "scripts/repair_backup_coverage.py"
+  ],
   "plugins": [
     {
       "directory": "private_companion",

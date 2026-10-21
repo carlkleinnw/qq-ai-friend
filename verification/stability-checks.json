@@ -1,0 +1,42 @@
+{
+  "version": "0.1.1",
+  "checked_at": "2026-10-21T17:41:08.385692+08:00",
+  "project_tests": {
+    "passed": 41,
+    "failed": 0,
+    "skipped": 0
+  },
+  "specified_upstream_compatibility_tests": {
+    "passed": 103,
+    "subtests_passed": 3,
+    "scope": "Four specified regression files with documented fixture compatibility; not the entire upstream suite."
+  },
+  "physical_qq_checks": {
+    "reconnected_reply_received": true,
+    "friendly_model_failure_received": true,
+    "recovered_voice_and_text_received": true,
+    "scope": "Previously completed physical QQ checks; private screenshots retained locally."
+  },
+  "native_replayed_message_stopped": true,
+  "native_backup_restore": {
+    "tables": 14,
+    "identical_files": 1464,
+    "sqlite_integrity_checks": 10,
+    "reminders_included": true,
+    "live_data_overwritten": false
+  },
+  "runtime_observation": {
+    "seconds": 60.0,
+    "samples": 7,
+    "all_healthy": true
+  },
+  "installed_reliability_plugin_matches_source": true,
+  "current_dashboard_ready": true,
+  "limitations": [
+    "Requires running, online Windows computer; no 24-hour availability claim.",
+    "Message deduplication is at-most-once within its TTL, not exactly-once execution.",
+    "Uncertain reminder delivery requires manual review before retry.",
+    "Model timeout applies to network operations, not a complete turn.",
+    "Source archive excludes runtime environment, credentials, chats and private backups."
+  ]
+}
