@@ -1,0 +1,21 @@
+{
+  "version": "0.5.0",
+  "installer": "AI-Friend_Setup_0.5.0.exe",
+  "sha256": "16a3cbbc9b6cdc86eb15f0147482b76d37425dbcd47f95a57e131a508bfa2468",
+  "checks": {
+    "version_is_0_5_0": true,
+    "new_isolated_environment_selected": true,
+    "managed_source_files_match_installer": true,
+    "installed_plugin_files_match_installer": true,
+    "final_exe_checksum_matches": true,
+    "prechange_existing_persona_content_and_capabilities_preserved": true,
+    "three_connected_bots_after_final_installer": true,
+    "three_independent_persona_bindings_after_final_installer": true,
+    "all_three_qq_chats_authorized": true,
+    "temporary_presets_removed": true
+  },
+  "installer_exit_code": 0,
+  "regression_tests_passed": 106,
+  "browser_checks_after_install": 14,
+  "environment_id": "baeca7ef36ed3b18"
+}

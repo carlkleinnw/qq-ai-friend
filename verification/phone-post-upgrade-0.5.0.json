@@ -1,0 +1,7 @@
+{
+  "checks": {
+    "qq_post_upgrade_bot_1_responds": true,
+    "qq_post_upgrade_bot_2_responds": true,
+    "qq_post_upgrade_bot_3_responds": true
+  }
+}

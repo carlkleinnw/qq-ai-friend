@@ -1,0 +1,22 @@
+{
+  "checked_at": "2026-10-22T10:31:07.961054+00:00",
+  "checks": {
+    "anonymous_access_denied": true,
+    "browser_create_persists_native": true,
+    "browser_reload_retains_preset": true,
+    "browser_edit_keeps_id": true,
+    "browser_search_filters": true,
+    "load_is_draft_only": true,
+    "browser_save_preserves_text_and_tools": true,
+    "mobile_no_horizontal_overflow": true,
+    "browser_delete_removes_preset": true,
+    "browser_no_script_errors": true,
+    "reject_invalid_qq_authorization": true,
+    "official_qq_menu_confirmed": true,
+    "enabled_chat_model_loaded": true,
+    "original_library_retained": true
+  },
+  "script_errors": [],
+  "phone_qq_receipt_verified": false,
+  "note": "QQ API acknowledgement is not a phone-client acceptance test."
+}
