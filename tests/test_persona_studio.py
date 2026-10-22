@@ -42,7 +42,9 @@ class PersonaIntegrationTests(unittest.IsolatedAsyncioTestCase):
             await self.manager.create_persona(pid, 'original-' + pid, tools=['future_task'], skills=[],
                                               begin_dialogs=['你好', '你好呀'], custom_error_message='稍后重试')
         platforms = [{'id': b, 'enable': True} for b in self.configs]
+        tools = SimpleNamespace(func_list=[SimpleNamespace(name='future_task')], iter_builtin_tools=lambda: [])
         self.context = SimpleNamespace(persona_manager=self.manager, register_web_api=Mock(),
+                                       get_llm_tool_manager=lambda: tools,
                                        get_config=lambda umo=None: self.configs[umo.split(':')[0]] if umo else {'platform': platforms})
         self.plugin = PersonaStudio(self.context, {'bots': [{'bot_id': b, 'name': b} for b in self.configs]})
 
@@ -161,7 +163,7 @@ class PersonaIntegrationTests(unittest.IsolatedAsyncioTestCase):
         command = self.plugin.qq_commands.execute
         original = await self.plugin.snapshot('bot-a')
         self.assertIn('未找到', await command(self.qq_event('/人设 99')))
-        self.assertIn('请在指令后', await command(self.qq_event('/自定义人设')))
+        self.assertIn('请直接发送', await command(self.qq_event('/自定义人设')))
         self.assertIn('20000', await command(self.qq_event('/自定义人设 ' + 'x' * 20001)))
         self.assertEqual(original, await self.plugin.snapshot('bot-a'))
 

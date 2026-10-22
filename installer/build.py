@@ -83,7 +83,7 @@ def build(version, compiler, conda, output):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--version', default='0.4.1')
+    parser.add_argument('--version', default='0.4.3')
     parser.add_argument('--compiler', type=Path, required=True)
     parser.add_argument('--conda', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)

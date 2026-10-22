@@ -1,2 +1,3 @@
 @echo off
-start "" notepad.exe "%~dp0runtime\本机登录说明.txt"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0installer\launch.ps1" -Action LoginInfo
+if errorlevel 1 pause

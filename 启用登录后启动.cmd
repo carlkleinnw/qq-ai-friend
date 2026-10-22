@@ -1,4 +1,3 @@
 @echo off
-chcp 65001 >nul
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\autostart.ps1" -Action Enable
-pause
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0installer\launch.ps1" -Action EnableAutostart
+if errorlevel 1 pause

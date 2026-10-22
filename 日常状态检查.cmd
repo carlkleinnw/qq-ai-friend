@@ -1,5 +1,3 @@
 @echo off
-chcp 65001 >nul
-cd /d "%~dp0"
-"%~dp0runtime\conda\python.exe" "%~dp0scripts\daily_check.py"
-pause
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0installer\launch.ps1" -Action Status
+if errorlevel 1 pause

@@ -1,0 +1,10 @@
+{
+  "checks": {
+    "qq_cancel_received_on_phone": true,
+    "qq_preset_preview_received_on_phone": true,
+    "qq_confirm_saved_on_phone": true,
+    "qq_save_matches_web_and_preserves_original": true,
+    "qq_model_request_no_missing_provider": true,
+    "qq_task_tool_called": true
+  }
+}

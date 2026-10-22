@@ -1,4 +1,3 @@
 @echo off
-chcp 65001 >nul
-"%~dp0runtime\conda\python.exe" "%~dp0scripts\service.py" start
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0installer\launch.ps1" -Action Start
 if errorlevel 1 pause

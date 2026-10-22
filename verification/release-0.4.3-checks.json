@@ -1,0 +1,17 @@
+{
+  "checked_at": "2026-10-22T03:46:51.167192+00:00",
+  "version": "0.4.3",
+  "full_project_tests": {
+    "passed": 94,
+    "failed": 0,
+    "warnings": 1
+  },
+  "mutation_test_detected_line_ending_regression": true,
+  "credential_scan_passed": true,
+  "runtime_and_private_data_excluded": true,
+  "installer_sha256": "3f7ce0cf03a8375c7ea29dff365f4ae2d867253b27c6404dc5d2e2ac3262f6fe",
+  "shipped_program_source_matches_installer_payload": true,
+  "prior_browser_checks": 14,
+  "prior_phone_checks": 6,
+  "scope": "Source and installer publication; full tests used an isolated checkout. Existing runtime settings were not changed."
+}

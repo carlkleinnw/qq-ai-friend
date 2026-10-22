@@ -1,0 +1,25 @@
+{
+  "checked_at": "2026-10-21T17:41:03.897848+00:00",
+  "version": "0.4.3",
+  "checks": {
+    "installed_version_0_4_3": true,
+    "owned_program_files_match_installer": true,
+    "original_persona_text_exactly_preserved": true,
+    "original_tools_order_and_skills_preserved": true,
+    "original_library_preserved": true,
+    "qq_authorization_survives_restart": true,
+    "chat_model_survives_restart": true,
+    "qq_menu_confirmed_after_upgrade": true,
+    "rollback_code_archive_valid": true,
+    "native_data_backup_includes_reminders": true,
+    "installer_excludes_private_credentials": true,
+    "browser_14_checks_pass": true,
+    "phone_6_checks_pass": true
+  },
+  "unit_tests_passed": 19,
+  "browser_checks_passed": 14,
+  "phone_checks_passed": 6,
+  "installer": "AI-Friend_Setup_0.4.3.exe",
+  "installer_sha256": "3f7ce0cf03a8375c7ea29dff365f4ae2d867253b27c6404dc5d2e2ac3262f6fe",
+  "publication_status": "verified locally before publication"
+}
