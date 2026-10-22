@@ -41,7 +41,7 @@ class PersonaIntegrationTests(unittest.IsolatedAsyncioTestCase):
         for pid in ['friend-a', 'friend-b']:
             await self.manager.create_persona(pid, 'original-' + pid, tools=['future_task'], skills=[],
                                               begin_dialogs=['你好', '你好呀'], custom_error_message='稍后重试')
-        platforms = [{'id': b, 'enable': True} for b in self.configs]
+        platforms = [{'id': b, 'enable': True, 'type': 'qq_official'} for b in self.configs]
         tools = SimpleNamespace(func_list=[SimpleNamespace(name='future_task')], iter_builtin_tools=lambda: [])
         self.context = SimpleNamespace(persona_manager=self.manager, register_web_api=Mock(),
                                        get_llm_tool_manager=lambda: tools,

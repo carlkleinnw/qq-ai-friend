@@ -13,6 +13,7 @@ from astrbot.dashboard.services.persona_service import PersonaService
 from .persona_form import pack, unpack, revision
 from .qq_commands import QQPersonaCommands, ALIASES
 from .qq_menu import merge_persona_menu
+from .bot_registry import BotRegistry
 
 PLUGIN = 'astrbot_plugin_persona_studio'
 
@@ -24,6 +25,9 @@ class PersonaStudio(Star):
         self.lock = asyncio.Lock()
         self.presets = json.loads((Path(__file__).parent / 'presets.json').read_text(encoding='utf-8'))
         self.qq_commands = QQPersonaCommands(self)
+        self.registry = BotRegistry(self)
+        self._sync_task = None
+        self._menu_versions = {}
         for endpoint, handler, method in [('state', self.state, 'GET'), ('save', self.save, 'POST'),
                                           ('qq-menu', self.qq_menu, 'POST'), ('presets', self.create_preset, 'POST'),
                                           ('update-preset', self.update_preset, 'POST'),
@@ -40,7 +44,10 @@ class PersonaStudio(Star):
 
     @filter.event_message_type(filter.EventMessageType.PRIVATE_MESSAGE, priority=99999)
     async def qq_persona_custom_input(self, event: AstrMessageEvent):
-        reply = await self.qq_commands.consume_custom(event)
+        if event.get_platform_id() in self.registry.errors:
+            reply = '这个机器人的独立配置尚未同步完成，请在本机好友人设页面刷新并核对连接状态。'
+        else:
+            reply = await self.qq_commands.consume_custom(event)
         if reply is None:
             return
         event.should_call_llm(False)
@@ -48,7 +55,42 @@ class PersonaStudio(Star):
         event.stop_event()
 
     def targets(self):
-        return self.config.get('bots', [])
+        return self.registry.targets()
+
+    async def reconcile_bots(self):
+        await self.registry.reconcile()
+
+    async def initialize(self):
+        self._sync_task = asyncio.create_task(self.watch_bots())
+
+    async def terminate(self):
+        if self._sync_task:
+            self._sync_task.cancel()
+            await asyncio.gather(self._sync_task, return_exceptions=True)
+
+    @filter.on_platform_loaded()
+    async def platform_loaded(self):
+        await self.reconcile_bots()
+
+    @filter.on_astrbot_loaded()
+    async def astrbot_loaded(self):
+        await self.reconcile_bots()
+
+    async def watch_bots(self):
+        while True:
+            try:
+                await self.reconcile_bots()
+                fingerprint = revision(await self.get_presets())
+                for bot in self.targets():
+                    if bot['connected'] and self._menu_versions.get(bot['bot_id']) != fingerprint:
+                        try:
+                            await asyncio.wait_for(self.publish_qq_menu(bot['bot_id']), timeout=12)
+                            self._menu_versions[bot['bot_id']] = fingerprint
+                        except Exception:
+                            self.logger.exception('QQ 菜单尚未同步：%s', bot['bot_id'])
+            except Exception:
+                self.logger.exception('自动同步机器人或 QQ 菜单未完成，将稍后重试')
+            await asyncio.sleep(30)
 
     def tool_catalog(self):
         manager = self.context.get_llm_tool_manager()
@@ -73,9 +115,14 @@ class PersonaStudio(Star):
             bio, prompt = unpack(persona.system_prompt)
             result.append({'id': reference['id'], 'name': reference['name'],
                            'bio': bio, 'prompt': prompt, 'summary': '自定义预设，可预览后选择。',
-                           'revision': revision(PersonaService.serialize_persona(persona))})
+                           'revision': revision({'name': reference['name'], 'persona': PersonaService.serialize_persona(persona)})})
         # Existing personas created in AstrBot's own editor remain selectable here.
-        bound = {self.target_persona(b['bot_id']) for b in self.targets()}
+        bound = set()
+        for bot in self.targets():
+            try:
+                bound.add(self.target_persona(bot['bot_id']))
+            except ValueError:
+                pass
         for persona in await self.context.persona_manager.get_all_personas():
             pid = persona.persona_id
             key = 'native-' + pid
@@ -95,18 +142,22 @@ class PersonaStudio(Star):
             except Exception:
                 self.logger.exception('预设已保存，QQ 菜单同步尚未完成')
                 return bot.get('name', bot['bot_id'])
-        return [name for name in await asyncio.gather(*(sync(b) for b in self.targets())) if name]
+        return [name for name in await asyncio.gather(*(sync(b) for b in self.targets() if b['enabled'])) if name]
 
-    async def save_preset(self, body):
-        if not isinstance(body, dict):
-            raise ValueError('预设内容格式不正确。')
-        name = body.get('name')
+    @staticmethod
+    def validate_name(name):
         if not isinstance(name, str) or not name.strip():
             raise ValueError('请给人设取一个名字。')
         name = name.strip()
         if (any(ord(c) < 32 for c in name) or
             sum(2 if ord(c) > 127 else 1 for c in name) > 14):
             raise ValueError('名称最多七个汉字或十四个英文字母，不能包含换行。')
+        return name
+
+    async def save_preset(self, body):
+        if not isinstance(body, dict):
+            raise ValueError('预设内容格式不正确。')
+        name = self.validate_name(body.get('name'))
         prompt = pack(body.get('bio'), body.get('prompt'))
         async with self.lock:
             presets = await self.get_presets()
@@ -148,11 +199,7 @@ class PersonaStudio(Star):
                     # Soft delete preserves already bound conversations and allows recovery.
                     self.config['hidden_presets'] = [*old_hidden, item['id']]
                 else:
-                    name = body.get('name')
-                    if (not isinstance(name, str) or not name.strip() or any(ord(c) < 32 for c in name)
-                            or sum(2 if ord(c) > 127 else 1 for c in name.strip()) > 14):
-                        raise ValueError('名称最多七个汉字或十四个英文字母，不能为空或换行。')
-                    name = name.strip()
+                    name = self.validate_name(body.get('name'))
                     if any(p['name'] == name and p['id'] != item['id'] for p in presets):
                         raise ValueError('已有同名预设，请换个名字。')
                     prompt = pack(body.get('bio'), body.get('prompt'))
@@ -282,9 +329,10 @@ class PersonaStudio(Star):
 
     async def state(self):
         try:
+            await self.reconcile_bots()
             bot_id = request.query.get('bot_id')
             data = {'bots': self.targets(), 'presets': await self.get_presets()}
-            if bot_id:
+            if bot_id and any(b['bot_id'] == bot_id for b in data['bots']):
                 data['current'] = await self.snapshot(bot_id)
                 data['tools'] = [{'name': t.name, 'description': t.description, 'active': t.active}
                                  for t in self.tool_catalog().values()]

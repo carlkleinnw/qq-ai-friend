@@ -9,6 +9,8 @@ let customReview = false;
 let editingPreset = null;
 let deletingPreset = null;
 let availableTools = [];
+let botListSignature = '';
+let polling = false;
 function selectedTools() {
   if ($('tools-mode').value === 'all') return null;
   if ($('tools-mode').value === 'none') return [];
@@ -63,6 +65,8 @@ async function load(botId) {
   try {
     const data = await call(bridge.apiGet('state', {bot_id: botId}));
     current = data.current;
+    updateBots(data.bots, current.bot_id);
+    $('external-change').hidden = true;
     availableTools = data.tools || [];
     renderTools();
     updatePresets(data.presets, $('preset').value);
@@ -79,6 +83,63 @@ async function load(botId) {
     status(`读取失败：${String(error.message || error).slice(0, 220)}`, true);
   } finally { setBusy(false); }
 }
+function updateBots(items, selected = current?.bot_id || $('bot').value) {
+  const signature = JSON.stringify(items);
+  if (signature !== botListSignature) {
+    $('bot').replaceChildren(...items.map((bot) => new Option(
+      bot.name + (!bot.enabled ? '（已停用）' : bot.connected ? '' : '（连接中）'), bot.bot_id)));
+    botListSignature = signature;
+  }
+  for (const option of [...$('bot').options]) {
+    if (option.dataset.removed && !(current && changed() && option.value === current.bot_id)) option.remove();
+  }
+  if (items.some((bot) => bot.bot_id === selected)) $('bot').value = selected;
+  else if (current && changed()) {
+    if (![...$('bot').options].some((option) => option.value === current.bot_id)) {
+      const removed = new Option('已移除的机器人（草稿已保留）', current.bot_id);
+      removed.disabled = true; removed.dataset.removed = 'true'; $('bot').add(removed);
+    }
+    $('bot').value = current.bot_id;
+  }
+  const bot = items.find((bot) => bot.bot_id === $('bot').value);
+  $('bot-state').textContent = bot?.error || (bot ? (!bot.enabled ? '已停用，可编辑已保存的人设' : bot.connected ? 'QQ 已连接' : '正在等待 QQ 连接') : '尚未接入 QQ 机器人');
+}
+async function refreshState(manual = false) {
+  if (busy || polling || $('custom-dialog').open || $('delete-dialog').open) return;
+  if (!manual && document.hidden) return;
+  polling = true;
+  try {
+    const requestedBot = current?.bot_id;
+    const requestedRevision = current?.revision;
+    const data = await call(bridge.apiGet('state', current ? {bot_id: current.bot_id} : {}));
+    if (busy || current?.bot_id !== requestedBot || current?.revision !== requestedRevision ||
+        $('custom-dialog').open || $('delete-dialog').open) return;
+    const dirty = changed();
+    updateBots(data.bots);
+    if (JSON.stringify(data.presets) !== JSON.stringify(presets)) updatePresets(data.presets, $('preset').value);
+    if (data.current && current && (data.current.revision !== current.revision ||
+        data.current.persona_id !== current.persona_id)) {
+      if (dirty) $('external-change').hidden = false;
+      else {
+        current = data.current; availableTools = data.tools || [];
+        renderTools(); fill(current.bio, current.prompt);
+        $('binding').textContent = `原生人格：${current.persona_id}`;
+        $('external-change').hidden = true;
+        status('已同步 QQ 或其他页面保存的人设。');
+      }
+    } else if (!data.current && (!current || !data.bots.some((b) => b.bot_id === current.bot_id))) {
+      if (dirty) { $('external-change').hidden = false; status('机器人已移除，草稿已保留。请选择其他机器人或重新接入。', true); }
+      else {
+        current = null; setBusy(false); $('fields').disabled = true;
+        if (data.bots.length) await load(data.bots[0].bot_id);
+        else status('尚未接入机器人。请点击“接入与管理 QQ 机器人”，完成官方绑定并保存。');
+      }
+    }
+    if (manual && current) status('机器人和人设列表已刷新。');
+  } catch (error) { if (manual) status(`刷新失败：${error.message}`, true); }
+  finally { polling = false; }
+}
+$('refresh-bots').onclick = () => refreshState(true);
 $('confirm-no').onclick = () => { dismiss(); $('prompt').focus(); };
 $('confirm-yes').onclick = () => { const action = pendingAction; dismiss(); action?.(); };
 $('bot').onchange = () => {
@@ -280,10 +341,12 @@ window.addEventListener('beforeunload', (event) => {
 try {
   await bridge.ready();
   const data = await call(bridge.apiGet('state'));
-  for (const bot of data.bots) $('bot').add(new Option(bot.name, bot.bot_id));
+  updateBots(data.bots);
   updatePresets(data.presets);
   if (data.bots.length) await load(data.bots[0].bot_id);
-  else status('尚未配置可编辑的机器人。请先在面板扫码保存 QQ，再到“维护与更新”点击“同步 QQ 机器人”。');
+  else status('尚未接入机器人。请点击“接入与管理 QQ 机器人”，完成官方绑定并保存。');
+  setInterval(() => refreshState(), 5000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshState(); });
 } catch (error) {
   status(`无法连接人设面板，请刷新或重新登录。${String(error.message || error).slice(0, 150)}`, true);
 }

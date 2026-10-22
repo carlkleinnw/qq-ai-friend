@@ -22,6 +22,14 @@ def main():
         client.headers['Authorization'] = 'Bearer ' + checked(client.post('/api/v1/auth/login', json={
             'username': credentials['username'], 'password': credentials['initial_password']}))['token']
         editor = checked(client.get(PERSONA_PLUGIN))['config']
+        # Native plugin reconciliation discovers saved bots and creates missing
+        # independent bindings. This is also used after every native bot load.
+        response = client.get('/api/v1/plugins/extensions/astrbot_plugin_persona_studio/state')
+        response.raise_for_status()
+        state = response.json()
+        if not isinstance(state.get('bots'), list):
+            raise RuntimeError('机器人登记尚未完成，请先打开好友人设页面核对。')
+        editor['bots'] = [{'bot_id': b['bot_id'], 'name': b['name']} for b in state['bots']]
         if args.authorize_umo:
             parts = args.authorize_umo.strip().split(':')
             if len(parts) != 3 or parts[1] != 'FriendMessage' or not parts[2] or not any(b['bot_id'] == parts[0] for b in editor['bots']):
@@ -39,6 +47,7 @@ def main():
         companion = checked(client.get(COMPANION))['config']
         enabled_personas = list(companion['basic_config'].get('multi_persona_ids', []))
         targets = {b['bot_id']: b for b in editor.get('bots', [])}
+        persona_names = {}
         for index, bot in enumerate(bots):
             route = bot['id'] + '::'
             conf_id = routes.get(route)
@@ -61,6 +70,7 @@ def main():
                 conf_id = checked(client.post('/api/v1/config-profiles', json={'name': f'QQ好友 {index + 1}', 'config': cfg}))['conf_id']
                 routes = {route: conf_id, **routes}
             enabled_personas.append(pid)
+            persona_names[pid] = targets.get(bot['id'], {}).get('name') or pid
             targets.setdefault(bot['id'], {'bot_id': bot['id'], 'name': f'QQ好友 {index + 1}'})
         checked(client.put('/api/v1/config-routes', json={'routing': routes}))
         companion['basic_config'].update(plugin_specific_persona_id='qq-friend', enable_multi_persona_mode=True,
@@ -71,7 +81,7 @@ def main():
             if pid == 'qq-friend':
                 continue
             if not client.get(extension + '/config-state', params={'persona_id': pid}).json().get('success'):
-                response = client.post(extension + '/config/create', json={'persona_id': pid, 'bot_name': pid, 'mode': 'copy', 'source_persona_id': 'qq-friend'})
+                response = client.post(extension + '/config/create', json={'persona_id': pid, 'bot_name': persona_names.get(pid, pid), 'mode': 'copy', 'source_persona_id': 'qq-friend'})
                 response.raise_for_status()
                 if not response.json().get('success'):
                     raise RuntimeError('陪伴人格独立配置尚未建立，请在原生陪伴面板核对。')

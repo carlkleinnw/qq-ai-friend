@@ -37,7 +37,8 @@ class PersonaRepair(unittest.IsolatedAsyncioTestCase):
         self.temp = tempfile.TemporaryDirectory(dir=SANDBOX.name)
         self.db = SQLiteDatabase(str(Path(self.temp.name) / 'personas.db'))
         await self.db.initialize()
-        cfg = {'agent_runner': {'runner_type': 'local', 'config': {'persona': {'persona_id': 'robot'}}}, 'platform': []}
+        cfg = {'agent_runner': {'runner_type': 'local', 'config': {'persona': {'persona_id': 'robot'}}},
+               'platform': [{'id': 'qq', 'type': 'qq_official', 'enable': True}]}
         self.acm = SimpleNamespace(default_conf=cfg, get_conf=lambda umo=None: cfg)
         self.manager = PersonaManager(self.db, self.acm)
         await self.manager.initialize()

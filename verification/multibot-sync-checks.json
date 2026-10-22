@@ -1,0 +1,23 @@
+{
+  "checks": {
+    "three_real_bots_connected_and_listed": true,
+    "three_distinct_native_personas": true,
+    "browser_lists_three_bots": true,
+    "qq_bot_1_commands_and_authorization": true,
+    "qq_bot_2_commands_and_authorization": true,
+    "qq_bot_3_commands_and_authorization": true,
+    "qq_create_appears_in_browser_automatically": true,
+    "browser_edit_is_visible_in_qq": true,
+    "qq_edit_is_visible_in_browser": true,
+    "qq_rename_preserves_id_and_syncs": true,
+    "qq_delete_removes_browser_option": true,
+    "library_crud_preserves_all_active_personas": true,
+    "future_native_bot_automatically_appears_disabled": true,
+    "external_current_persona_auto_refreshes": true,
+    "dirty_draft_retained_and_stale_save_rejected": true,
+    "mobile_no_horizontal_overflow": true,
+    "deleted_bot_disappears_automatically": true,
+    "browser_no_script_errors": true,
+    "all_original_personas_preserved_after_cleanup": true
+  }
+}

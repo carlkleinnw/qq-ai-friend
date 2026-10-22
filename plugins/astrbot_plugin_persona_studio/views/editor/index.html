@@ -12,7 +12,10 @@
       <div><h1>好友人设</h1><p>选一个起点，再把它改成你喜欢的样子。</p></div>
       <label class="bot-label" for="bot">正在编辑的机器人<select id="bot" disabled></select></label>
     </header>
+    <div class="actions bot-actions"><a href="/#/platform" target="_top">接入与管理 QQ 机器人</a><button id="refresh-bots" type="button">刷新机器人</button><span id="bot-state" class="hint"></span></div>
+    <p class="hint">通过官方扫码绑定并保存的机器人会自动进入列表。QQ 官方平台中新建的机器人，需要先在这里接入一次。</p>
     <p id="status" role="status" aria-live="polite">正在读取机器人与人设…</p>
+    <p id="external-change" role="status" hidden>QQ 或其他页面已更新当前人设。你的草稿已保留；请先复制草稿，再点击“重新读取已保存内容”核对。</p>
     <div id="confirm" role="region" aria-label="保留未保存的修改" hidden>
       <p>当前有未保存的修改。继续会替换这份草稿。</p>
       <button id="confirm-yes" type="button">放弃草稿并继续</button>
@@ -34,6 +37,7 @@
             <h2>QQ 同步</h2>
             <button id="sync-qq" type="button">同步 QQ 人设菜单</button>
             <p id="qq-state" class="hint"></p>
+            <details><summary>在 QQ 创建和管理人设</summary><p class="hint">发送“/新建人设 名称 | 人设内容”创建；“/查看人设 名称”查看；“/编辑人设 名称 | 新内容”编辑；“/重命名人设 旧名 | 新名”改名；“/删除人设 名称”删除。修改预览后，发送“/确认人设”。</p></details>
             <label for="qq-umo">授权自己的 QQ 私聊</label>
             <input id="qq-umo" placeholder="粘贴 QQ 中 /sid 的完整结果" autocomplete="off">
             <button id="authorize-qq" type="button">授权此私聊编辑人设</button>
@@ -62,7 +66,7 @@
             </section>
             <footer><button id="save" type="submit" class="primary">保存人设</button><button id="reload" type="button">重新读取已保存内容</button><span id="dirty" aria-live="polite">未修改</span></footer>
             <p class="hint">只修改所选机器人的默认人格，保留语音、模型、记忆和工具设置。若某个会话单独指定了人格，请在原生“自定义规则”中核对。</p>
-            <p class="hint">修改后可在 QQ 发送 /new 开始新对话，减少旧上下文的影响；长期记忆保留。创建更多人格、配置工具与绑定新机器人，继续使用原生“人格”和“配置文件”页面。</p>
+            <p class="hint">QQ 与网页共用人设库，此页自动检查更新。修改后可在 QQ 发送 /new 开始新对话，减少旧上下文的影响；长期记忆保留。</p>
           </section>
         </div>
       </fieldset>

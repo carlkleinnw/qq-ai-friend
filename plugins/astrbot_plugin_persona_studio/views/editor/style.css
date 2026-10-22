@@ -10,6 +10,10 @@ p { margin: 0 0 16px; max-width: 72ch; }
 header p, .hint, .optional, .field-meta, #dirty { color: var(--muted); }
 .hint { font-size: 14px; }
 .bot-label { width: 240px; flex-shrink: 0; }
+.bot-actions { margin: 16px 0 10px; }
+#external-change { padding: 12px; border: 1px solid var(--accent); background: var(--tint); }
+details { margin: 12px 0 20px; }
+summary { cursor: pointer; color: var(--accent); }
 label { display: block; font-weight: 600; margin-bottom: 7px; }
 select, textarea, input, button { font: inherit; color: inherit; }
 select, textarea, input { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); }

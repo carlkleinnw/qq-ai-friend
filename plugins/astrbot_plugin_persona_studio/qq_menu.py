@@ -27,7 +27,7 @@ def persona_menu(presets):
     menus = [
         {'type': 'menu', 'name': '人设设置', 'sub_menu_items': [
             {'type': 'send_message', 'name': name, 'send_message': command}
-            for name, command in [('预设列表', '/人设'), ('自定义人设', '/自定义人设 '),
+            for name, command in [('预设列表', '/人设'), ('新建人设', '/新建人设'),
                                   ('当前人设', '/当前人设'), ('确认保存', '/确认人设'),
                                   ('取消修改', '/取消人设')]]},
     ]
@@ -47,7 +47,7 @@ def merge_persona_menu(current, presets):
             if sum(2 if ord(char) > 127 else 1 for char in item['name']) > 14:
                 raise ValueError('预设名称过长，QQ 子菜单最多支持七个中文字符。')
     existing = deepcopy((current or {}).get('items', []))
-    commands = {'/人设', '/自定义人设', '/当前人设', '/确认人设', '/取消人设'}
+    commands = {'/人设', '/自定义人设', '/新建人设', '/当前人设', '/确认人设', '/取消人设'}
     def ours(menu):
         children = menu.get('sub_menu_items', [])
         return (menu.get('type') == 'menu' and bool(children) and
