@@ -4,6 +4,7 @@ from pathlib import Path
 import httpx
 from playwright.sync_api import sync_playwright,expect
 
+from service import URL
 ROOT=Path(__file__).resolve().parents[1]
 CODE='''import asyncio
 from pathlib import Path
@@ -56,7 +57,7 @@ def main():
         z.writestr(name+'/metadata.yaml',f'name: {name}\nauthor: local-audit\ndesc: Isolated memory UI check\nversion: 0.0.1\n')
     cred=json.loads((ROOT/'runtime/dashboard-login.local.json').read_text('utf-8-sig'))
     checks={};out=ROOT/'verification/plugin-memory-audit'
-    with httpx.Client(base_url='http://127.0.0.1:6185',trust_env=False,timeout=35) as c:
+    with httpx.Client(base_url=URL,trust_env=False,timeout=35) as c:
         def api(method,path,**kw):
             r=c.request(method,path,**kw);r.raise_for_status();d=r.json()
             if d.get('status')=='error':raise RuntimeError('Memory UI audit API failed: '+path)
@@ -75,8 +76,8 @@ def main():
                     response=route.fetch(url=route.request.url.replace(original,base+'/page'))
                     route.fulfill(response=response)
                 page.route('**/api/v1/plugins/extensions/astrbot_plugin_memory_companion/page/**',isolated_route)
-                page.goto('http://127.0.0.1:6185');page.locator('input[type=text]').fill(cred['username']);page.locator('input[type=password]').fill(cred['initial_password']);page.get_by_role('button',name='登录',exact=True).click();page.locator('#friend-home-bot').wait_for()
-                page.goto('http://127.0.0.1:6185/#/plugin-view/astrbot_plugin_memory_companion/记忆面板')
+                page.goto(URL);page.locator('input[type=text]').fill(cred['username']);page.locator('input[type=password]').fill(cred['initial_password']);page.get_by_role('button',name='登录',exact=True).click();page.locator('#friend-home-bot').wait_for()
+                page.goto(URL+'/#/plugin-view/astrbot_plugin_memory_companion/记忆面板')
                 frame=page.frame_locator('iframe');frame.locator('#globalSearch').fill('审计档案');frame.locator('#globalSearch').press('Enter')
                 expect(frame.locator('#railStatus')).to_have_class('rail-status is-ok')
                 expect(frame.locator('#viewTitle')).to_have_text('记忆检视');checks['early_search_survives_slow_initialization']=True

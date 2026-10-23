@@ -6,8 +6,8 @@ import uuid
 import httpx
 from PIL import Image
 from playwright.sync_api import sync_playwright,expect
+from service import URL
 ROOT=Path(__file__).resolve().parents[1]
-URL='http://127.0.0.1:6185'
 BASE='/api/v1/plugins/extensions/astrbot_plugin_persona_studio/'
 
 def main():

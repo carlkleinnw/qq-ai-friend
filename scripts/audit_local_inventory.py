@@ -5,11 +5,12 @@ from datetime import datetime,timezone
 from pathlib import Path
 import httpx
 
+from service import URL
 ROOT=Path(__file__).resolve().parents[1]
 
 def main():
     credentials=json.loads((ROOT/'runtime/dashboard-login.local.json').read_text('utf-8-sig'))
-    with httpx.Client(base_url='http://127.0.0.1:6185',trust_env=False,timeout=30) as c:
+    with httpx.Client(base_url=URL,trust_env=False,timeout=30) as c:
         def get(path,**kwargs):
             r=c.get(path,**kwargs);r.raise_for_status();d=r.json()
             if d.get('status')=='error':raise RuntimeError('Read-only audit failed: '+path)

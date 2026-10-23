@@ -4,13 +4,14 @@ from pathlib import Path
 import httpx
 from playwright.sync_api import sync_playwright,expect
 
+from service import URL
 ROOT=Path(__file__).resolve().parents[1]
 BASE='/api/v1/plugins/extensions/astrbot_plugin_persona_studio/'
 
 def main():
     cred=json.loads((ROOT/'runtime/dashboard-login.local.json').read_text('utf-8-sig'))
     created=[];profiles=[];personas=[];checks={};tag='agent-audit-'+uuid.uuid4().hex[:8]
-    with httpx.Client(base_url='http://127.0.0.1:6185',trust_env=False,timeout=35) as c:
+    with httpx.Client(base_url=URL,trust_env=False,timeout=35) as c:
         def api(method,path,**kw):
             r=c.request(method,path,**kw);r.raise_for_status();d=r.json()
             if d.get('status')=='error':raise RuntimeError('Agent audit operation failed: '+path)
@@ -24,8 +25,8 @@ def main():
                 state=api('GET',BASE+'state',params={'bot_id':bid});profiles.append(state['binding']['config_id']);personas.append(state['current']['persona_id'])
             with sync_playwright() as pw:
                 browser=pw.chromium.launch(channel='msedge',headless=True);page=browser.new_page();page.set_default_timeout(15000)
-                page.goto('http://127.0.0.1:6185');page.locator('input[type=text]').fill(cred['username']);page.locator('input[type=password]').fill(cred['initial_password']);page.get_by_role('button',name='登录',exact=True).click();page.locator('#friend-home-bot').wait_for()
-                page.goto('http://127.0.0.1:6185/#/plugin-view/astrbot_plugin_persona_studio/agent?bot_id='+created[0]);f=page.frame_locator('iframe');expect(f.locator('#save')).to_be_enabled()
+                page.goto(URL);page.locator('input[type=text]').fill(cred['username']);page.locator('input[type=password]').fill(cred['initial_password']);page.get_by_role('button',name='登录',exact=True).click();page.locator('#friend-home-bot').wait_for()
+                page.goto(URL+'/#/plugin-view/astrbot_plugin_persona_studio/agent?bot_id='+created[0]);f=page.frame_locator('iframe');expect(f.locator('#save')).to_be_enabled()
                 f.locator('#runner').select_option('dify');f.locator('[data-field=dify_api_base]').fill('https://example.invalid/v1');f.locator('[data-field=dify_api_key]').fill('audit-only-secret');f.locator('[data-field=variables]').fill('{"audit":"isolated"}');f.locator('#save').click();expect(f.locator('#status')).to_contain_text('已保存并加载')
                 saved=api('GET',BASE+'control-state',params={'bot_id':created[0]});checks['agent_native_save']=saved['runner_type']=='dify' and saved['agent_fields']['variables']=={'audit':'isolated'}
                 checks['saved_secret_not_returned']='audit-only-secret' not in json.dumps(saved)

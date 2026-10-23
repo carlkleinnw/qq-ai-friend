@@ -6,8 +6,8 @@ from pathlib import Path
 import httpx
 from playwright.sync_api import sync_playwright, expect
 
+from service import URL
 ROOT = Path(__file__).resolve().parents[1]
-URL = 'http://127.0.0.1:6185'
 PLUGIN = 'astrbot_plugin_persona_studio'
 BASE = '/api/v1/plugins/extensions/' + PLUGIN + '/'
 

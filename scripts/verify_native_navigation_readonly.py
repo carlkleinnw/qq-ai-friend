@@ -3,8 +3,8 @@ import json
 import httpx
 from pathlib import Path
 from playwright.sync_api import sync_playwright,expect
+from service import URL
 ROOT=Path(__file__).resolve().parents[1]
-URL='http://127.0.0.1:6185'
 
 def main():
  credentials=json.loads((ROOT/'runtime/dashboard-login.local.json').read_text(encoding='utf-8'));out=ROOT/'verification/native-navigation';checks={};errors=[]

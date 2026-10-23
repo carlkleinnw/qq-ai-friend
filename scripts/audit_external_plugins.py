@@ -9,6 +9,7 @@ import hashlib
 from pathlib import Path
 import httpx
 
+from service import URL
 ROOT=Path(__file__).resolve().parents[1]
 FIXTURE='''from types import SimpleNamespace
 from astrbot.api.star import Star
@@ -63,7 +64,7 @@ def main():
         z.writestr(name+'/main.py',FIXTURE.replace('__NAME__',name))
         z.writestr(name+'/metadata.yaml',f'name: {name}\nauthor: local-audit\ndesc: No-network temporary probe\nversion: 0.0.1\n')
         z.writestr(name+'/_conf_schema.json',json.dumps({'marker':{'type':'string','description':'Test marker','default':'audit-default'}}))
-    with httpx.Client(base_url='http://127.0.0.1:6185',trust_env=False,timeout=60) as c:
+    with httpx.Client(base_url=URL,trust_env=False,timeout=60) as c:
         def api(method,path,**kwargs):
             r=c.request(method,path,**kwargs);r.raise_for_status();d=r.json()
             if d.get('status')=='error':raise RuntimeError('Audit operation failed: '+path)
