@@ -1,0 +1,70 @@
+{
+  "version": "0.7.0",
+  "date": "2026-10-23",
+  "tested_code_commit": "d0bad2e155dfb36367dc15e04fc7eb47c7bafb06",
+  "project_tests": {
+    "passed": 186,
+    "failed": 0,
+    "skipped": 0,
+    "warning": "Upstream audioop deprecation"
+  },
+  "powershell_syntax_passed": true,
+  "javascript_syntax_passed": true,
+  "payload": {
+    "manifest_hashes_valid": true,
+    "runtime_private_test_and_logs_excluded": true,
+    "known_private_credentials_absent": true,
+    "native_navigation_and_profile_management_present": true,
+    "native_plugin_repairs_packaged": true,
+    "release_notes_packaged": true,
+    "version_lock_matches": true,
+    "source_matches_built_payload": true
+  },
+  "exe_install_upgrade_rollback_uninstall_reinstall": {
+    "new_exe_first_install_exit_zero": true,
+    "new_install_has_no_qq_credentials": true,
+    "new_install_has_no_model_credentials": true,
+    "native_navigation_asset_installed": true,
+    "upgrade_keeps_qq_persona_memory_chat_and_private_file": true,
+    "upgrade_selects_new_environment": true,
+    "original_windows_registration_restored": true,
+    "original_shortcuts_restored": true,
+    "rollback_restores_v060_and_old_environment": true,
+    "rollback_keeps_user_data": true,
+    "rollback_restores_previous_dashboard": true,
+    "upgrade_after_rollback_keeps_user_data": true,
+    "uninstall_keeps_user_data": true,
+    "uninstall_marks_program_removed": true,
+    "reinstall_keeps_user_data": true,
+    "final_artifact_first_install_exit_zero": true,
+    "installed_memory_runtime_audit_exit_zero": true
+  },
+  "dependency_preparation": "Isolated copies of previously validated locked v0.6.0 dependencies; final installer applies v0.7.0 patches. Fresh application data for first install. Network dependency download not retested.",
+  "installed_memory_integration": {
+    "checks_passed": 38,
+    "isolated_test_bots": 3,
+    "isolated_test_friends_per_bot": 2,
+    "private_data_written": false,
+    "fresh_process_reopen_verified": true
+  },
+  "artifact": {
+    "name": "AI-Friend_Setup_0.7.0.exe",
+    "sha256": "c565bb07f47a28f68ecc379fbfe2c8049df0f533167f688c308187612023aa4e"
+  },
+  "rollback_baseline": "v0.6.0",
+  "local_review": "Reviewed stable AppID matching, per-session Agent persistence, stale persona binding checks, profile upload validation, credential redaction, plugin route cleanup, TLS-preserving download fallback and installer rollback.",
+  "live_installation_modified_by_lifecycle_tests": false,
+  "existing_live_dashboard_still_accessible": true,
+  "qq_messages_sent": false,
+  "paid_operations_performed": false,
+  "private_data_excluded": true,
+  "not_revalidated": [
+    "Real QQ message round trip",
+    "Automatic model-based memory extraction and final reply",
+    "Reminder delivery to real QQ",
+    "External Agent connectivity",
+    "Voice and paid plugins",
+    "Fresh network dependency download"
+  ],
+  "qq_profile_limit": "Official platform management remains authoritative for names, avatars, creation, review and cancellation. Web-only display settings are labeled accordingly."
+}
