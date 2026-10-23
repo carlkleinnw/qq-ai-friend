@@ -2,8 +2,22 @@
 import asyncio
 from copy import deepcopy
 import hashlib
+from collections import Counter
+from urllib.parse import urlsplit, urlunsplit
 
 QQ_TYPES = {'qq_official', 'qq_official_webhook'}
+
+
+def avatar_url(value):
+    """QQ's /users/@me still returns HTTP qlogo URLs; use their HTTPS origin."""
+    if not isinstance(value,str): return ''
+    parts=urlsplit(value)
+    if parts.scheme=='https' and parts.hostname and not parts.username and not parts.password:
+        return value
+    host=parts.hostname or ''
+    if parts.scheme=='http' and (host=='qlogo.cn' or host.endswith('.qlogo.cn')):
+        return urlunsplit(('https',parts.netloc,parts.path,parts.query,parts.fragment))
+    return ''
 
 
 class BotRegistry:
@@ -15,23 +29,47 @@ class BotRegistry:
     def targets(self):
         context = self.plugin.context
         old = {b['bot_id']: b for b in self.plugin.config.get('bots', [])}
+        platforms = context.get_config().get('platform', [])
+        counts = Counter(str(p.get('appid', '')) for p in platforms if p.get('type') in QQ_TYPES)
+        profiles = {str(row.get('appid')): row for row in self.plugin.config.get('identity_records', [])}
         result = []
-        for platform in context.get_config().get('platform', []):
+        for platform in platforms:
             if platform.get('type') not in QQ_TYPES or not platform.get('id'):
                 continue
             bot_id = platform['id']
-            name = platform.get('name') or old.get(bot_id, {}).get('name') or bot_id
+            appid = str(platform.get('appid') or '')
+            profile = profiles.get(appid, {})
+            official_name = profile.get('qq_name', '')
+            avatar = profile.get('qq_avatar', '') or profile.get('local_avatar', '')
+            name = official_name or profile.get('local_name') or platform.get('name') or old.get(bot_id, {}).get('name') or bot_id
+            source = 'qq_cache' if official_name else 'local'
             connected = False
+            status = 'disabled' if not platform.get('enable', True) else 'connecting'
             try:
                 adapter = context.get_platform_inst(bot_id)
                 robot = adapter.client.robot if adapter else None
-                if robot:
+                if robot and str(adapter.appid) == appid:
                     name = robot.name or name
-                    connected = bool(platform.get('enable', True))
+                    official_name = robot.name or official_name
+                    avatar = getattr(robot, 'avatar', '') or avatar
+                    source = 'qq' if robot.name else source
+                client = adapter.client if adapter else None
+                if platform.get('enable', True) and client and not client.is_closed():
+                    if platform['type'] == 'qq_official':
+                        connected = str(adapter.appid) == appid and any(
+                            getattr(ws, '_conn', None) is not None and not ws._conn.closed and
+                            bool(getattr(ws, '_session', {}).get('session_id'))
+                            for ws in getattr(client, '_active_websockets', []))
+                        status = 'connected' if connected else 'connecting'
+                    else:
+                        status = 'unknown'  # HTTP callbacks have no persistent socket to inspect.
             except (AttributeError, RuntimeError):
                 pass  # robot metadata is populated after QQ's READY event.
             result.append({'bot_id': bot_id, 'name': name, 'enabled': platform.get('enable', True),
-                           'connected': connected, 'error': self.errors.get(bot_id, '')})
+                           'appid': appid, 'avatar': avatar_url(avatar) or avatar_url(profile.get('local_avatar','')),
+                           'qq_name': official_name, 'local_name': profile.get('local_name', ''), 'local_avatar':profile.get('local_avatar',''),
+                           'name_source': source, 'identity_conflict': bool(appid and counts[appid] > 1),
+                           'connection_status': status, 'connected': connected, 'error': self.errors.get(bot_id, '')})
         return result
 
     async def reconcile(self):
@@ -45,7 +83,7 @@ class BotRegistry:
                     self.plugin.logger.exception('机器人独立人设绑定未完成：%s', bot['bot_id'])
                     self.errors[bot['bot_id']] = '机器人配置同步未完成，请查看本机日志后重试。'
 
-    async def ensure_companion(self, bot):
+    async def ensure_companion(self, bot, persona_id=None):
         """Use the pinned companion plugin's own config-creation operation.
 
         Without this adapter, its enabled multi-persona mode falls back to the
@@ -58,7 +96,10 @@ class BotRegistry:
         companion = metadata.star_cls if metadata and metadata.activated else None
         if not companion or not getattr(companion, 'enable_multi_persona_mode', False):
             return
-        pid = self.plugin.target_persona(bot['bot_id'])
+        runner = self.plugin.context.get_config(f"{bot['bot_id']}:FriendMessage:persona-editor").get('agent_runner', {})
+        if runner.get('runner_type', 'local') != 'local':
+            return  # External Agents own their personas; do not block their native message pipeline.
+        pid = persona_id or self.plugin.target_persona(bot['bot_id'])
         if pid == companion._primary_persona_id():
             return
         ids = companion._configured_multi_persona_ids()

@@ -35,7 +35,8 @@ class PersonaIntegrationTests(unittest.IsolatedAsyncioTestCase):
         await self.db.initialize()
         self.configs = {bot: {'agent_runner': {'runner_type': 'local', 'config': {'persona': {'persona_id': pid}}}}
                         for bot, pid in [('bot-a', 'friend-a'), ('bot-b', 'friend-b')]}
-        acm = SimpleNamespace(default_conf=self.configs['bot-a'])
+        acm = SimpleNamespace(default_conf=self.configs['bot-a'], confs=self.configs,
+                              ucr=SimpleNamespace(umop_to_conf_id={b+'::': b for b in self.configs}))
         self.manager = PersonaManager(self.db, acm)
         await self.manager.initialize()
         for pid in ['friend-a', 'friend-b']:
@@ -44,6 +45,7 @@ class PersonaIntegrationTests(unittest.IsolatedAsyncioTestCase):
         platforms = [{'id': b, 'enable': True, 'type': 'qq_official'} for b in self.configs]
         tools = SimpleNamespace(func_list=[SimpleNamespace(name='future_task')], iter_builtin_tools=lambda: [])
         self.context = SimpleNamespace(persona_manager=self.manager, register_web_api=Mock(),
+                                       astrbot_config_mgr=acm,
                                        get_llm_tool_manager=lambda: tools,
                                        get_config=lambda umo=None: self.configs[umo.split(':')[0]] if umo else {'platform': platforms})
         self.plugin = PersonaStudio(self.context, {'bots': [{'bot_id': b, 'name': b} for b in self.configs]})
@@ -99,7 +101,7 @@ class PersonaIntegrationTests(unittest.IsolatedAsyncioTestCase):
                                unified_msg_origin=scope or f'{bot}:FriendMessage:{sender}')
 
     def allow_qq_owner(self):
-        self.plugin.config['qq_editor_sessions'] = ['bot-a:FriendMessage:owner', 'bot-b:FriendMessage:owner']
+        self.plugin.config['qq_editor_enabled_bots'] = ['bot-a', 'bot-b']
 
     async def test_qq_preset_preview_confirm_is_native_and_does_not_change_other_bot(self):
         self.allow_qq_owner()
@@ -130,13 +132,15 @@ class PersonaIntegrationTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn('已保存', await command(self.qq_event('/confirmpersona')))
         self.assertEqual(text, (await self.plugin.snapshot('bot-a'))['prompt'])
 
-    async def test_qq_permission_blocks_other_senders_groups_and_spoofed_scope(self):
+    async def test_qq_switch_blocks_writes_when_off_and_rejects_groups_and_spoofed_scope(self):
         self.allow_qq_owner()
         command = self.plugin.qq_commands.execute
         original = await self.plugin.snapshot('bot-a')
-        self.assertIn('尚未获得', await command(self.qq_event('/人设 5', sender='stranger')))
+        self.plugin.config['qq_editor_enabled_bots'] = []
+        self.assertIn('开关已关闭', await command(self.qq_event('/人设 5', sender='stranger')))
+        self.allow_qq_owner()
         self.assertIn('群聊中不执行', await command(self.qq_event('/人设 5', private=False, admin=True)))
-        self.assertIn('尚未获得', await command(self.qq_event('/人设 5', sender='stranger', scope='bot-a:FriendMessage:owner')))
+        self.assertIn('消息来源不一致', await command(self.qq_event('/人设 5', sender='stranger', scope='bot-a:FriendMessage:owner')))
         self.assertIn('未找到', await command(self.qq_event('/人设 5', bot='unknown', admin=True)))
         self.assertEqual(original, await self.plugin.snapshot('bot-a'))
         self.assertEqual({}, self.plugin.qq_commands.pending)
@@ -151,7 +155,8 @@ class PersonaIntegrationTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn('已过期', await command(self.qq_event('/确认人设')))
         self.assertEqual(original, await self.plugin.snapshot('bot-a'))
 
-    async def test_qq_confirmation_rejects_web_edits_and_native_admin_can_prepare(self):
+    async def test_qq_confirmation_rejects_web_edits_with_enabled_robot(self):
+        self.allow_qq_owner()
         command = self.plugin.qq_commands.execute
         await command(self.qq_event('/人设 5', admin=True))
         await self.manager.update_persona('friend-a', system_prompt='New web content')

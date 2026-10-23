@@ -17,6 +17,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--authorize-umo')
     args = parser.parse_args()
+    if args.authorize_umo:
+        parser.error('已改为机器人开关：请打开好友人设页面，选择机器人，再打开“允许 QQ 编辑人设”。无需填写 UMO。')
     credentials = json.loads((ROOT / 'runtime/dashboard-login.local.json').read_text())
     with httpx.Client(base_url=URL, trust_env=False, timeout=90) as client:
         client.headers['Authorization'] = 'Bearer ' + checked(client.post('/api/v1/auth/login', json={
@@ -30,14 +32,6 @@ def main():
         if not isinstance(state.get('bots'), list):
             raise RuntimeError('机器人登记尚未完成，请先打开好友人设页面核对。')
         editor['bots'] = [{'bot_id': b['bot_id'], 'name': b['name']} for b in state['bots']]
-        if args.authorize_umo:
-            parts = args.authorize_umo.strip().split(':')
-            if len(parts) != 3 or parts[1] != 'FriendMessage' or not parts[2] or not any(b['bot_id'] == parts[0] for b in editor['bots']):
-                raise ValueError('请填写已同步机器人的完整私聊 UMO，不接受群聊或未登记的机器人。')
-            editor['qq_editor_sessions'] = list(dict.fromkeys([*editor.get('qq_editor_sessions', []), args.authorize_umo.strip()]))
-            checked(client.put(PERSONA_PLUGIN, json={'config': editor}))
-            print('该 QQ 私聊已获得人设编辑权限；未授予系统管理员权限。')
-            return
         default = checked(client.get('/api/v1/config-profiles/default'))['config']
         bots = [p for p in default.get('platform', []) if p.get('enable', True) and p.get('type') in {'qq_official', 'qq_official_webhook'}]
         if not bots:
@@ -94,7 +88,7 @@ def main():
         for bot in bots:
             checked(client.post('/api/v1/plugins/extensions/astrbot_plugin_persona_studio/qq-menu',
                                 json={'bot_id': bot['id']}))
-    print(f'已同步 {len(bots)} 个 QQ 机器人并配置底部人设菜单。重新打开 QQ 私聊查看；请发 /sid 并在维护窗口授权自己，才能保存人设。')
+    print(f'已同步 {len(bots)} 个 QQ 机器人并配置底部人设菜单。重新打开 QQ 私聊查看；请在好友人设页面打开所需机器人的“允许 QQ 编辑人设”开关。')
 
 
 if __name__ == '__main__':

@@ -10,7 +10,7 @@ import tests.test_persona_repair as repair
 class MultiBotSync(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         await repair.PersonaRepair.asyncSetUp(self)
-        self.platforms = [{'id': 'qq', 'type': 'qq_official', 'enable': True}]
+        self.platforms = [{'id': 'qq', 'type': 'qq_official', 'appid': 'test-qq', 'enable': True}]
         self.acm.default_conf['platform'] = self.platforms
         self.confs = {'old': self.acm.default_conf}
         self.routes = {'qq::': 'old'}
@@ -33,7 +33,7 @@ class MultiBotSync(unittest.IsolatedAsyncioTestCase):
         self.plugin.context.astrbot_config_mgr = self.acm
         self.plugin.context.reload_pipeline_scheduler = AsyncMock()
         self.plugin.context.get_config = get_config
-        self.plugin.context.get_platform_inst = lambda bot: SimpleNamespace(
+        self.plugin.context.get_platform_inst = lambda bot: SimpleNamespace(appid=next((p.get('appid','') for p in self.platforms if p['id']==bot),''),
             client=SimpleNamespace(robot=SimpleNamespace(name={'qq': '可名', 'qq-new': '新机器人'}.get(bot))))
 
     asyncTearDown = repair.PersonaRepair.asyncTearDown
@@ -122,7 +122,7 @@ class MultiBotSync(unittest.IsolatedAsyncioTestCase):
                                is_admin=lambda: False, unified_msg_origin=f'qq:FriendMessage:{sender}')
 
     async def test_qq_library_crud_updates_web_store_without_applying(self):
-        self.config['qq_editor_sessions'] = ['qq:FriendMessage:owner']
+        self.config['qq_editor_enabled_bots'] = ['qq']
         execute = self.plugin.qq_commands.execute
         before = await self.plugin.snapshot('qq')
         self.assertIn('待确认', await execute(self.event('/newpersona 测试好友 | keep it short')))
@@ -142,9 +142,11 @@ class MultiBotSync(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(await self.plugin.snapshot('qq'), before)
 
     async def test_qq_library_permissions_and_conflict_do_not_overwrite(self):
-        self.config['qq_editor_sessions'] = ['qq:FriendMessage:owner']
+        self.config['qq_editor_enabled_bots'] = ['qq']
         execute = self.plugin.qq_commands.execute
-        self.assertIn('尚未获得', await execute(self.event('/newpersona test | prompt', sender='stranger')))
+        self.config['qq_editor_enabled_bots'] = []
+        self.assertIn('开关已关闭', await execute(self.event('/newpersona test | prompt', sender='stranger')))
+        self.config['qq_editor_enabled_bots'] = ['qq']
         item = await self.create()
         await execute(self.event('/deletepersona ' + item['id']))
         await self.plugin.change_preset({**item, 'preset_id': item['id'], 'name': '网页新名字', 'bot_id': 'qq'})
@@ -152,7 +154,7 @@ class MultiBotSync(unittest.IsolatedAsyncioTestCase):
         self.assertIn(item['id'], [p['id'] for p in await self.plugin.get_presets()])
 
     async def test_qq_named_creation_can_take_next_message_and_cancel(self):
-        self.config['qq_editor_sessions'] = ['qq:FriendMessage:owner']
+        self.config['qq_editor_enabled_bots'] = ['qq']
         execute = self.plugin.qq_commands.execute
         self.assertIn('请直接发送', await execute(self.event('/新建人设 分步创建')))
         self.assertIn('待确认', await self.plugin.qq_commands.consume_custom(self.event('Be kind and concise.')))
@@ -163,7 +165,7 @@ class MultiBotSync(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(any(p['name'] == '分步创建' for p in await self.plugin.get_presets()))
 
     async def test_rename_invalidates_a_pending_delete_even_with_same_prompt(self):
-        self.config['qq_editor_sessions'] = ['qq:FriendMessage:owner']
+        self.config['qq_editor_enabled_bots'] = ['qq']
         item = await self.create()
         await self.plugin.qq_commands.execute(self.event('/删除人设 ' + item['id']))
         await self.plugin.change_preset({**item, 'preset_id': item['id'], 'name': '另一个名字', 'bot_id': 'qq'})

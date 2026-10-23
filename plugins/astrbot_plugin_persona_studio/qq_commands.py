@@ -28,19 +28,17 @@ class QQPersonaCommands:
             raise ValueError('请在与机器人的 QQ 私聊中设置人设，群聊中不执行修改。')
         scope = str(event.unified_msg_origin)
         bot_id = event.get_platform_id()
-        if scope.split(':', 1)[0] != bot_id:
+        if scope != f'{bot_id}:FriendMessage:{event.get_sender_id()}':
             raise ValueError('消息来源不一致，未执行修改。')
         return scope, bot_id
 
     def authorize(self, event):
         scope, bot_id = self.source(event)
         if not any(b['bot_id'] == bot_id for b in self.plugin.targets()):
-            raise ValueError('未找到这个机器人的人设配置。请在维护窗口先点“同步 QQ 机器人”，再发 /sid 并通过“授权 QQ 私聊”授权自己。')
+            raise ValueError('未找到这个机器人的人设配置。请在本机好友人设页面刷新机器人。')
         self.plugin.target_persona(bot_id)
-        allowed = scope in self.plugin.config.get('qq_editor_sessions', [])
-        # Full private UMO is scoped to one bot; also check the actual sender.
-        if not event.is_admin() and not (allowed and scope.rsplit(':', 1)[-1] == str(event.get_sender_id())):
-            raise ValueError('这个私聊尚未获得人设编辑权限。请在本机插件配置中授权此私聊，或使用管理员账号；可发 /sid 查看会话来源。')
+        if bot_id not in self.plugin.config.get('qq_editor_enabled_bots', []):
+            raise ValueError('这个机器人的 QQ 人设编辑开关已关闭。请在电脑“好友人设”页面选择这个机器人，打开“允许 QQ 编辑人设”开关后重试。')
         return scope, bot_id
 
     async def execute(self, event):
@@ -63,13 +61,13 @@ class QQPersonaCommands:
                     '改名：/重命名人设 旧名 | 新名\n删除：/删除人设 名称\n'
                     '查看：/当前人设\n确认：/确认人设\n取消：/取消人设\n'
                     '先预览，确认后保存。修改与网页同步，不更新 QQ 公开简介。\n'
-                    '首次设置：维护窗口“同步 QQ 机器人”，然后发 /sid 并通过“授权 QQ 私聊”授权自己；列表可直接查看，保存需授权。')
+                    '首次设置：电脑“好友人设”页面选择这个机器人，打开“允许 QQ 编辑人设”开关。无需复制会话标识；列表随时可查看。')
             if command == '自定义人设' and not content:
                 try:
                     self.authorize(event)
                 except ValueError:
                     return ('请在指令后填写内容，例如：/自定义人设 你是一位温柔细心的 AI 好友，说话简短自然。\n'
-                            '先预览，再确认保存；尚未授权时请从维护窗口完成 QQ 同步与私聊授权。')
+                            '先预览，再确认保存；请先在电脑“好友人设”页面打开这个机器人的“允许 QQ 编辑人设”开关。')
                 async with self.lock:
                     key = (scope, str(event.get_sender_id()))
                     self.pending.pop(key, None)
@@ -82,6 +80,7 @@ class QQPersonaCommands:
             scope, bot_id = self.authorize(event)
             key = (scope, str(event.get_sender_id()))
             async with self.lock:
+                self.authorize(event)  # Recheck after a concurrent switch change.
                 now = time.monotonic()
                 self.pending = {k: v for k, v in self.pending.items() if v['expires'] > now}
                 self.waiting_custom.pop(key, None)

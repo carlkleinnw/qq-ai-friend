@@ -9,65 +9,65 @@
 <body>
   <main>
     <header>
-      <div><h1>好友人设</h1><p>选一个起点，再把它改成你喜欢的样子。</p></div>
-      <label class="bot-label" for="bot">正在编辑的机器人<select id="bot" disabled></select></label>
+      <div><h1>好友设置</h1><p>选择机器人，自动载入它绑定的人设。</p></div>
+      <label class="bot-label" for="bot">正在管理的机器人<select id="bot" disabled></select><span id="bot-state" class="hint"></span></label>
     </header>
-    <div class="actions bot-actions"><a href="/#/platform" target="_top">接入与管理 QQ 机器人</a><button id="refresh-bots" type="button">刷新机器人</button><span id="bot-state" class="hint"></span></div>
-    <p class="hint">通过官方扫码绑定并保存的机器人会自动进入列表。QQ 官方平台中新建的机器人，需要先在这里接入一次。</p>
-    <p id="status" role="status" aria-live="polite">正在读取机器人与人设…</p>
+    <p id="status" role="status" aria-live="polite">正在读取好友与人设…</p>
+    <section class="binding-panel" aria-labelledby="binding-title">
+      <div><h2 id="binding-title">机器人与人设绑定</h2><p id="binding-state" role="status">正在读取绑定…</p></div>
+      <div class="binding-controls"><label for="bound-persona">绑定的人设<select id="bound-persona" disabled></select></label><button id="save-binding" type="button" disabled>保存绑定</button></div>
+      <p class="hint" id="binding-help">保存后用于该机器人的默认聊天。其他机器人共用的人设会复制为独立副本。</p>
+      <div class="actions"><a href="/#/providers" target="_top">模型配置</a><a href="/#/platforms" target="_top">QQ 连接</a><a href="/#/config" target="_top">Agent 连接</a></div>
+    </section>
     <p id="external-change" role="status" hidden>QQ 或其他页面已更新当前人设。你的草稿已保留；请先复制草稿，再点击“重新读取已保存内容”核对。</p>
     <div id="confirm" role="region" aria-label="保留未保存的修改" hidden>
       <p>当前有未保存的修改。继续会替换这份草稿。</p>
-      <button id="confirm-yes" type="button">放弃草稿并继续</button>
-      <button id="confirm-no" type="button">继续编辑草稿</button>
+      <button id="confirm-yes" type="button">放弃草稿并继续</button><button id="confirm-no" type="button">继续编辑草稿</button>
     </div>
     <form id="editor">
       <fieldset id="fields" disabled>
         <div class="layout">
-          <aside>
-            <h2>从预设开始</h2>
-            <p class="hint">只会载入草稿，点击保存后才生效。</p>
-            <label for="preset">人设预设</label>
-            <input id="preset-search" type="search" placeholder="搜索名称或人设内容" aria-label="搜索人设">
-            <select id="preset"></select>
-            <p id="preset-description" class="hint"></p>
-            <div class="actions"><button id="load-preset" type="button">载入预设</button><button id="custom" type="button">新建自定义预设</button></div>
-            <div class="actions preset-actions"><button id="edit-preset" type="button">编辑选中预设</button><button id="delete-preset" type="button">删除选中预设</button><button id="refresh-presets" type="button">刷新列表</button></div>
-            <p class="hint">保存预设后，点击“载入预设”，再“保存人设”应用到机器人。</p>
-            <h2>QQ 同步</h2>
-            <button id="sync-qq" type="button">同步 QQ 人设菜单</button>
-            <p id="qq-state" class="hint"></p>
-            <details><summary>在 QQ 创建和管理人设</summary><p class="hint">发送“/新建人设 名称 | 人设内容”创建；“/查看人设 名称”查看；“/编辑人设 名称 | 新内容”编辑；“/重命名人设 旧名 | 新名”改名；“/删除人设 名称”删除。修改预览后，发送“/确认人设”。</p></details>
-            <label for="qq-umo">授权自己的 QQ 私聊</label>
-            <input id="qq-umo" placeholder="粘贴 QQ 中 /sid 的完整结果" autocomplete="off">
-            <button id="authorize-qq" type="button">授权此私聊编辑人设</button>
-            <h2>从 QQ 简介开始</h2>
-            <p class="hint">把 QQ 中的个人简介粘贴到右侧即可，也可以只填写简介。预设简介可以自由修改。</p>
-            <p class="hint">当前接入支持手动复制与粘贴，尚不支持自动读写 QQ 资料。</p>
-          </aside>
-          <section aria-labelledby="edit-heading">
-            <h2 id="edit-heading">编辑人设</h2>
-            <p id="binding" class="hint"></p>
-            <label for="bio">个人简介 <span class="optional">可选，会参与人设</span></label>
-            <textarea id="bio" rows="4" maxlength="1000" placeholder="例如：我是大肥鱼，有一点小傲娇，但会认真听你说话。" aria-describedby="bio-help"></textarea>
-            <div class="field-meta"><span id="bio-help">保存后可复制到 QQ 的个人简介中。</span><span id="bio-count">0 / 1000</span></div>
-            <button id="copy-bio" type="button">复制简介</button>
-            <label for="prompt" class="prompt-label">详细人设 <span class="optional">背景、性格、说话方式与边界</span></label>
-            <textarea id="prompt" rows="14" maxlength="20000" placeholder="你希望它是谁、如何与你相处、怎么说话？可以直接写自然语言。" aria-describedby="prompt-help"></textarea>
-            <div class="field-meta"><span id="prompt-help">两项至少填写一项。简介与详细人设会一起用于聊天。</span><span id="prompt-count">0 / 20000</span></div>
-            <section aria-labelledby="tools-heading" class="tool-section">
-              <h2 id="tools-heading">这个人设可以使用的工具</h2>
-              <p id="model-state" class="hint"></p>
-              <label for="tools-mode">工具权限</label>
+          <section class="persona-editor" aria-labelledby="edit-heading">
+            <div class="section-heading"><div><h2 id="edit-heading">性格与说话方式</h2><p class="hint">写下你希望它怎样与你相处。</p></div><a class="quiet-link" href="#preset-library">选择人设</a></div>
+            <label for="prompt">详细人设</label>
+            <textarea id="prompt" rows="12" maxlength="20000" placeholder="例如：你是一位温柔的学习搭子，认真听我说话，用简短自然的中文回复。" aria-describedby="prompt-help"></textarea>
+            <div class="field-meta"><span id="prompt-help">简介与详细人设至少填写一项，保存后一起用于聊天。</span><span id="prompt-count">0 / 20000</span></div>
+            <details class="settings-fold"><summary>个人简介 <span>可选</span></summary><div class="fold-body">
+              <label for="bio">个人简介</label>
+              <textarea id="bio" rows="3" maxlength="1000" placeholder="用几句话介绍它。" aria-describedby="bio-help"></textarea>
+              <div class="field-meta"><span id="bio-help">可手动复制到 QQ 简介，不会自动同步 QQ 资料。</span><span id="bio-count">0 / 1000</span></div>
+              <button id="copy-bio" type="button">复制简介</button>
+            </div></details>
+            <details class="settings-fold"><summary>能力与工具 <span>高级设置</span></summary><div class="fold-body">
+              <p id="model-state" class="hint"></p><label for="tools-mode">允许使用的工具</label>
               <select id="tools-mode"><option value="selected">仅使用勾选的工具</option><option value="all">使用全部已启用工具</option><option value="none">不使用工具</option></select>
-              <div id="tools-list"></div>
-              <p class="hint">已停用或未加载的工具需要先到原生插件页面处理。MCP 服务也通过原生插件页面接入。</p>
-              <div class="actions"><a href="/#/extension" target="_top">管理插件和 MCP</a><a href="/#/providers" target="_top">配置和启用模型</a><a href="/#/persona" target="_top">原生人格管理</a></div>
-            </section>
-            <footer><button id="save" type="submit" class="primary">保存人设</button><button id="reload" type="button">重新读取已保存内容</button><span id="dirty" aria-live="polite">未修改</span></footer>
-            <p class="hint">只修改所选机器人的默认人格，保留语音、模型、记忆和工具设置。若某个会话单独指定了人格，请在原生“自定义规则”中核对。</p>
-            <p class="hint">QQ 与网页共用人设库，此页自动检查更新。修改后可在 QQ 发送 /new 开始新对话，减少旧上下文的影响；长期记忆保留。</p>
+              <div id="tools-list"></div><p class="hint">停用或未加载的工具，请到插件页面管理。</p>
+              <div class="actions"><a href="/#/extension" target="_top">插件与外部工具</a><a href="/#/providers" target="_top">聊天与语音服务</a></div>
+            </div></details>
+            <footer class="save-bar"><button id="save" type="submit" class="primary">保存修改</button><span id="dirty" aria-live="polite">未修改</span></footer>
           </section>
+          <aside>
+            <details id="preset-library" class="settings-fold" open><summary>人设库 <span>选择一个起点</span></summary><div class="fold-body">
+              <label for="preset-search" class="visually-hidden">搜索人设</label><input id="preset-search" type="search" placeholder="搜索人设" aria-label="搜索人设">
+              <label for="preset" class="visually-hidden">选择人设</label><select id="preset"></select><p id="preset-description" class="hint"></p>
+              <button id="load-preset" type="button" class="wide-button">载入并编辑</button><p class="hint compact-hint">载入后可修改，保存才会替换当前人设。</p>
+              <button id="custom" type="button" class="wide-button">新建人设</button>
+              <details class="minor-fold"><summary>管理人设库</summary><div class="actions"><button id="edit-preset" type="button">编辑选中人设</button><button id="delete-preset" type="button">删除选中人设</button><button id="refresh-presets" type="button">刷新列表</button></div></details>
+            </div></details>
+            <details class="settings-fold"><summary>QQ 人设编辑 <span>权限与同步</span></summary><div class="fold-body">
+              <label class="qq-editor-toggle" for="qq-editor-enabled"><input id="qq-editor-enabled" type="checkbox" role="switch" aria-describedby="qq-editor-help qq-access-state"><span>允许在 QQ 修改人设</span></label>
+              <p id="qq-access-state" class="hint" role="status" aria-live="polite"></p>
+              <p id="qq-editor-help" class="permission-note">仅对当前好友生效，开关自动保存。开启后，任何与它私聊的人都能创建、编辑、删除和应用人设。</p>
+              <button id="sync-qq" type="button">重新同步 QQ 菜单</button><p id="qq-state" class="hint"></p>
+              <details class="minor-fold"><summary>QQ 指令用法</summary><p class="hint">发送“/新建人设 名称 | 人设内容”创建；“/查看人设 名称”查看；“/编辑人设 名称 | 新内容”编辑；“/重命名人设 旧名 | 新名”改名；“/删除人设 名称”删除。预览后发送“/确认人设”保存。</p></details>
+            </div></details>
+            <details class="settings-fold"><summary>连接与其他设置</summary><div class="fold-body">
+              <div class="actions"><a href="/#/platforms" target="_top">管理 QQ 连接</a><button id="refresh-bots" type="button">刷新好友列表</button><button id="reload" type="button">重新读取已保存内容</button></div>
+              <p id="binding" class="hint"></p><a href="/#/persona" target="_top">高级人设管理</a>
+              <p class="hint compact-hint">这里只修改所选好友的默认人设，语音、模型、记忆和工具设置保留。单独指定过人设的会话，请到自定义规则核对。</p>
+              <p class="hint">修改后可在 QQ 发送 /new 开始新对话；长期记忆保留。</p>
+            </div></details>
+          </aside>
         </div>
       </fieldset>
     </form>

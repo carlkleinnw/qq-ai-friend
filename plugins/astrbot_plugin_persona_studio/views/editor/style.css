@@ -1,8 +1,8 @@
-:root { color-scheme: light; --bg: #fff; --text: #202b3b; --muted: #536276; --line: #c4ccd6; --accent: #245db5; --tint: #edf3fc; --danger: #a12121; }
+:root { color-scheme: light; --bg: #fff; --text: #243750; --muted: #596b7f; --line: #dce3eb; --accent: #285c91; --tint: #f5f7fa; --danger: #a12121; }
 [data-theme="dark"] { color-scheme: dark; --bg: #171c24; --text: #edf1f8; --muted: #b1bdce; --line: #526177; --accent: #a9caff; --tint: #27354a; --danger: #ffb2b2; }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.65 "Segoe UI", "Microsoft YaHei", sans-serif; }
-main { max-width: 1160px; padding: 28px 32px 40px; margin: auto; }
+main { max-width: 1240px; padding: 34px 38px 40px; margin: auto; }
 header { display: flex; align-items: start; justify-content: space-between; gap: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--line); }
 h1 { font-size: 26px; margin: 0 0 6px; line-height: 1.4; }
 h2 { font-size: 18px; margin: 0 0 12px; }
@@ -27,11 +27,11 @@ button:active { translate: 0 1px; }
 button:disabled, select:disabled { cursor: wait; opacity: .65; }
 :focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 ::selection { background: var(--tint); color: var(--text); }
-.primary { background: #245db5; border-color: #245db5; color: #fff; }
+.primary { background: #285c91; border-color: #285c91; color: #fff; }
 .primary:hover { background: #194b99; border-color: #194b99; }
 fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
-.layout { display: grid; grid-template-columns: 255px minmax(0, 1fr); gap: 34px; padding-top: 18px; }
-aside { padding-right: 25px; border-right: 1px solid var(--line); }
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 38px; padding-top: 18px; align-items: start; }
+aside { padding-left: 26px; border-left: 1px solid var(--line); }
 aside h2:not(:first-child) { margin-top: 34px; }
 .actions, footer { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 .preset-actions { margin: 12px 0; }
@@ -39,7 +39,12 @@ aside h2:not(:first-child) { margin-top: 34px; }
 #tools-list { max-height: 260px; overflow: auto; margin: 12px 0; }
 .tool-option { display: flex; align-items: start; gap: 9px; font-weight: 400; overflow-wrap: anywhere; }
 .tool-option input { width: auto; flex-shrink: 0; margin-top: 6px; }
-#qq-umo { margin-bottom: 10px; }
+.qq-editor-toggle { display: flex; align-items: center; gap: 10px; min-height: 44px; margin-top: 18px; cursor: pointer; }
+.qq-editor-toggle input { appearance: none; width: 42px; height: 24px; padding: 2px; margin: 0; border-radius: 20px; background: var(--muted); border: 1px solid var(--muted); flex-shrink: 0; cursor: pointer; }
+.qq-editor-toggle input::before { content: ''; display: block; width: 18px; height: 18px; border-radius: 50%; background: var(--bg); }
+.qq-editor-toggle input:checked { background: var(--accent); border-color: var(--accent); }
+.qq-editor-toggle input:checked::before { transform: translateX(18px); }
+.qq-editor-toggle input:disabled { cursor: wait; opacity: .65; }
 a { color: var(--accent); text-underline-offset: 3px; }
 @media (max-width: 760px) { select, textarea, input { font-size: 16px; } }
 footer { margin: 24px 0 16px; }
@@ -65,7 +70,43 @@ dialog h3 { font-size: 16px; }
   header { display: block; }
   .bot-label { width: 100%; margin-top: 20px; }
   .layout { grid-template-columns: minmax(0, 1fr); gap: 26px; }
-  aside { padding: 0 0 22px; border-right: 0; border-bottom: 1px solid var(--line); }
+  aside { padding: 22px 0 0; border-left: 0; border-top: 1px solid var(--line); }
   aside h2:not(:first-child) { margin-top: 24px; }
   footer button { flex: 1 1 auto; }
 }
+.section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 22px; }
+.section-heading h2 { margin-bottom: 6px; }
+.section-heading p { margin: 0; }
+.quiet-link { font-size: 13px; white-space: nowrap; }
+.settings-fold { border-bottom: 1px solid var(--line); margin: 0; }
+.settings-fold > summary { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; padding: 18px 0; font-size: 14px; font-weight: 600; color: var(--text); }
+.settings-fold > summary::after { content: '+'; margin-left: auto; color: var(--muted); font-size: 18px; font-weight: 400; }
+.settings-fold[open] > summary::after { content: '−'; }
+.settings-fold > summary span { font-size: 12px; font-weight: 400; color: var(--muted); }
+.fold-body { padding: 0 0 20px; min-width: 0; }
+.fold-body .actions { gap: 8px; }
+.fold-body button { font-size: 13px; }
+.wide-button { width: 100%; margin: 6px 0; }
+.compact-hint { margin: 8px 0 14px; font-size: 12px; }
+.minor-fold { margin: 14px 0 0; font-size: 13px; }
+.minor-fold summary { margin-bottom: 10px; }
+.permission-note { font-size: 13px; padding: 12px; background: var(--tint); border-radius: 6px; }
+.save-bar { position: sticky; bottom: 0; background: var(--bg); border-top: 1px solid var(--line); padding: 16px 0; margin: 18px 0 0; z-index: 2; }
+.save-bar button { min-width: 120px; }
+#dirty { font-size: 13px; }
+#status { font-size: 13px; min-height: 40px; }
+#bot-state { display: block; margin-top: 6px; font-size: 12px; font-weight: 400; }
+#preset-description { font-size: 13px; margin: 10px 0; }
+.qq-editor-toggle { margin-top: 0; font-size: 13px; }
+#tools-list { border: 1px solid var(--line); border-radius: 6px; padding: 12px; }
+.tool-option { padding: 5px 0; font-size: 13px; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.binding-panel { background: var(--tint); border-radius: 10px; padding: 20px 24px; margin: 8px 0 20px; }
+.binding-panel h2 { font-size: 16px; margin: 0 0 6px; }
+.binding-panel p { font-size: 13px; margin: 0 0 12px; overflow-wrap: anywhere; }
+.binding-controls { display: flex; align-items: end; gap: 14px; margin: 16px 0 12px; }
+.binding-controls label { flex: 1; margin: 0; font-size: 13px; }
+.binding-controls button { flex-shrink: 0; }
+.binding-panel a { font-size: 13px; }
+@media (max-width: 760px) { .binding-panel { padding: 18px 16px; } .binding-controls { flex-wrap: wrap; } .binding-controls label { flex-basis: 100%; } }
+@media (prefers-reduced-motion: reduce) { button:active { translate: none; } }

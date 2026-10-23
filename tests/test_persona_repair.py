@@ -39,12 +39,15 @@ class PersonaRepair(unittest.IsolatedAsyncioTestCase):
         await self.db.initialize()
         cfg = {'agent_runner': {'runner_type': 'local', 'config': {'persona': {'persona_id': 'robot'}}},
                'platform': [{'id': 'qq', 'type': 'qq_official', 'enable': True}]}
-        self.acm = SimpleNamespace(default_conf=cfg, get_conf=lambda umo=None: cfg)
+        self.acm = SimpleNamespace(default_conf=cfg, get_conf=lambda umo=None: cfg,
+                                   confs={'robot-config': cfg},
+                                   ucr=SimpleNamespace(umop_to_conf_id={'qq::': 'robot-config'}))
         self.manager = PersonaManager(self.db, self.acm)
         await self.manager.initialize()
         await self.manager.create_persona('robot', 'existing', tools=['memory'], skills=['read'])
         self.config = Config(bots=[{'bot_id': 'qq', 'name': 'QQ'}], custom_presets=[])
         context = SimpleNamespace(persona_manager=self.manager, get_config=lambda umo=None: cfg,
+                                  astrbot_config_mgr=self.acm,
                                   register_web_api=lambda *args: None,
                                   get_llm_tool_manager=lambda: SimpleNamespace(
                                       func_list=[SimpleNamespace(name='memory')], iter_builtin_tools=lambda: []))
@@ -152,7 +155,7 @@ class PersonaRepair(unittest.IsolatedAsyncioTestCase):
                                 get_platform_id=lambda: 'qq', is_admin=lambda: False, get_sender_id=lambda: 'user')
         with self.assertRaises(ValueError):
             self.plugin.qq_commands.authorize(event)
-        self.config['qq_editor_sessions'] = ['qq:FriendMessage:user']
+        self.config['qq_editor_enabled_bots'] = ['qq']
         self.assertEqual(self.plugin.qq_commands.authorize(event)[1], 'qq')
 
 

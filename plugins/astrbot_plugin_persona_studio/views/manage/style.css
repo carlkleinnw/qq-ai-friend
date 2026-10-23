@@ -1,0 +1,22 @@
+:root { color-scheme:light; --bg:#fff; --ink:#243750; --muted:#596b7f; --accent:#285c91; --line:#dce3eb; --soft:#f5f7fa; }
+[data-theme="dark"] { color-scheme:dark; --bg:#171c24; --ink:#edf1f8; --muted:#b1bdce; --accent:#a9caff; --line:#526177; --soft:#27354a; }
+* { box-sizing:border-box; } body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.65 "Segoe UI","Microsoft YaHei",sans-serif; }
+main { max-width:1120px; margin:auto; padding:32px 38px 48px; } header { display:flex; justify-content:space-between; gap:24px; align-items:center; margin-bottom:24px; }
+h1 { font-size:27px; margin:0 0 8px; line-height:1.4; } h2 { font-size:18px; margin:0 0 6px; } p { margin:0 0 14px; max-width:72ch; } header p,.hint { color:var(--muted); font-size:13px; }
+a { color:var(--accent); text-underline-offset:4px; } button,input,select,textarea { font:inherit; color:inherit; } label { display:block; margin-bottom:14px; font-weight:550; font-size:14px; }
+input,select,textarea { display:block; width:100%; margin-top:7px; padding:10px 12px; border:1px solid var(--line); border-radius:7px; background:var(--bg); min-height:44px; }
+select { appearance:auto; } textarea { line-height:1.8; resize:vertical; caret-color:var(--accent); } input::placeholder,textarea::placeholder { color:var(--muted); opacity:1; }
+button { min-height:44px; padding:9px 16px; border:1px solid var(--line); border-radius:7px; background:var(--bg); cursor:pointer; } button:hover { background:var(--soft); border-color:var(--accent); }
+button:disabled { opacity:.6; cursor:wait; } .primary { background:#285c91; color:#fff; border-color:#285c91; } .primary:hover { background:#204b78; }
+:focus-visible { outline:3px solid var(--accent); outline-offset:3px; } ::selection { background:#cfe1f1; color:#243750; }
+.selectors { display:grid; grid-template-columns:1fr 1fr; gap:24px; } .identity { display:flex; gap:18px; align-items:center; padding:22px 24px; background:var(--soft); border-radius:10px; margin:8px 0 16px; }
+.identity img { width:54px; height:54px; border-radius:12px; object-fit:cover; flex-shrink:0; } .identity div { flex:1; min-width:0; } .identity p { font-size:12px; color:var(--muted); margin:2px 0; overflow-wrap:anywhere; }
+.identity button { font-size:13px; } #status { min-height:28px; font-size:13px; overflow-wrap:anywhere; } #status[data-error="true"] { color:#ad3232; }
+.notice { font-size:13px; color:var(--muted); overflow-wrap:anywhere; } .sections { display:flex; flex-wrap:wrap; gap:22px; padding:8px 0 18px; } .sections a { font-size:14px; }
+fieldset { border:0; padding:0; margin:0; min-width:0; } details { margin:0; border-top:1px solid var(--line); scroll-margin-top:16px; } summary { padding:20px 0; cursor:pointer; font-size:16px; font-weight:650; } summary span { font-size:12px; color:var(--muted); font-weight:400; }
+.body { padding:0 0 24px; } .body a { font-size:13px; } #agent-fields { display:grid; grid-template-columns:1fr 1fr; gap:0 22px; margin-top:18px; } .check { display:flex; align-items:center; gap:10px; min-height:40px; font-weight:400; }
+.check input { width:18px; height:18px; min-height:0; margin:0; padding:0; accent-color:var(--accent); } .checks { display:grid; grid-template-columns:1fr 1fr; gap:2px 20px; }
+footer { position:sticky; bottom:0; display:flex; gap:16px; align-items:center; background:var(--bg); padding:16px 0; margin:0 0 20px; border-top:1px solid var(--line); z-index:2; }
+#dirty { color:var(--muted); font-size:13px; } .result { margin-top:24px; border-top:1px solid var(--line); padding-top:24px; } .result p { color:var(--muted); font-size:13px; overflow-wrap:anywhere; }
+#guard { background:var(--soft); padding:16px; margin-bottom:16px; border-radius:8px; } #guard button { margin-right:8px; } [hidden] { display:none!important; }
+@media(max-width:700px) { main { padding:22px 16px 40px; } header { display:block; } header a { font-size:13px; } .selectors,#agent-fields,.checks { grid-template-columns:1fr; gap:0; } .identity { flex-wrap:wrap; padding:18px; } .identity div { min-width:170px; } input,select,textarea { font-size:16px; } footer { flex-wrap:wrap; gap:8px; } }

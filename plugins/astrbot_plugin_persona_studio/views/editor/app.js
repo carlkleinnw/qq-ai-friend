@@ -11,6 +11,30 @@ let deletingPreset = null;
 let availableTools = [];
 let botListSignature = '';
 let polling = false;
+let qqEditorEnabled = false;
+let selectedBotId = null;
+let bindingState = null;
+let loadSequence = 0;
+
+function renderBinding(binding) {
+  const pending = bindingState?.config_id === binding?.config_id && bindingState?.persona_id === binding?.persona_id ? $('bound-persona').value : '';
+  bindingState = binding;
+  const choices = binding?.choices || [];
+  $('bound-persona').replaceChildren(new Option('请选择人设', ''), ...choices.map(p => new Option(p.name + ' · ' + p.persona_id, p.persona_id)));
+  const selected = pending || binding?.persona_id;
+  $('bound-persona').value = choices.some(p => p.persona_id === selected) ? selected : '';
+  const botName = $('bot').selectedOptions[0]?.textContent || '当前机器人';
+  const name = choices.find(p => p.persona_id === binding?.persona_id)?.name;
+  $('binding-state').textContent = binding?.message || `${botName} → ${name || binding?.persona_id || '尚未绑定人设'}`;
+  $('binding-help').textContent = binding?.shared ? '当前人设被其他配置共用。点击“保存绑定”会建立独立副本，再编辑不会影响其他机器人。' : '保存后用于该机器人的默认聊天。单独设置过的会话仍按自己的规则处理。';
+  $('bound-persona').disabled = busy || !binding?.editable;
+  $('save-binding').disabled = busy || !binding?.editable;
+}
+function updateQQAccess(data) {
+  qqEditorEnabled = data.qq_editor_enabled === true;
+  $('qq-editor-enabled').checked = qqEditorEnabled;
+  $('qq-access-state').textContent = qqEditorEnabled ? '已开启：可直接在 QQ 私聊中编辑，修改后仍需确认保存。' : '已关闭：QQ 只能查看人设列表，不能编辑或应用人设。';
+}
 function selectedTools() {
   if ($('tools-mode').value === 'all') return null;
   if ($('tools-mode').value === 'none') return [];
@@ -44,10 +68,12 @@ function guard(action) {
 function dismiss() { $('confirm').hidden = true; pendingAction = null; }
 function setBusy(value) {
   busy = value;
-  $('fields').disabled = value;
-  for (const id of ['save', 'load-preset', 'sync-qq', 'authorize-qq', 'reload']) $(id).disabled = value || !current;
+  $('fields').disabled = value || !current;
+  for (const id of ['save', 'load-preset', 'sync-qq', 'qq-editor-enabled', 'reload']) $(id).disabled = value || !current;
   $('bot').disabled = value;
-  $('save').textContent = value ? '处理中…' : '保存人设';
+  $('bound-persona').disabled = value || !bindingState?.editable;
+  $('save-binding').disabled = value || !bindingState?.editable;
+  $('save').textContent = value ? '处理中…' : '保存修改';
 }
 async function call(operation, timeout = 20000) {
   let timer;
@@ -60,29 +86,58 @@ async function call(operation, timeout = 20000) {
   } finally { clearTimeout(timer); }
 }
 async function load(botId) {
+  const sequence = ++loadSequence;
   dismiss();
+  selectedBotId = botId;
+  current = null; bindingState = null;
   setBusy(true);
+  fill('', ''); $('tools-list').replaceChildren();
+  $('model-state').textContent = ''; $('binding').textContent = '';
+  $('bound-persona').replaceChildren(); $('binding-state').textContent = '正在读取当前机器人的绑定…';
+  updateQQAccess({qq_editor_enabled: false});
+  status('正在读取所选机器人的人设…');
   try {
     const data = await call(bridge.apiGet('state', {bot_id: botId}));
-    current = data.current;
-    updateBots(data.bots, current.bot_id);
+    if (sequence !== loadSequence) return;
+    current = data.current || null;
+    parent.postMessage({type: 'ai-friend-bot-selected', botId}, '*');
+    updateBots(data.bots, botId);
+    renderBinding(data.binding);
     $('external-change').hidden = true;
+    updatePresets(data.presets, $('preset').value);
+    if (!current) {
+      status(data.binding?.message || '尚未设置人设，请选择人设并保存绑定。');
+      return;
+    }
     availableTools = data.tools || [];
     renderTools();
-    updatePresets(data.presets, $('preset').value);
     $('model-state').textContent = data.model_ready ? '已有启用的模型；工具能否执行还取决于模型支持与插件连接。' :
       '当前没有启用的聊天模型，QQ 聊天和工具调用暂不可用。请点击“配置和启用模型”保存有效密钥并启用模型。';
-    $('qq-state').textContent = data.qq_authorized ? '已配置 QQ 私聊编辑授权；可在 QQ 选择后确认保存。' :
-      'QQ 编辑尚未授权：在自己的 QQ 私聊发 /sid，粘贴结果并授权后，才能确认保存。';
+    updateQQAccess(data);
     $('bot').value = current.bot_id;
     $('binding').textContent = `原生人格：${current.persona_id}`;
     fill(current.bio, current.prompt);
-    status('已读取当前人设。修改后需要点击“保存人设”。');
+    status('正在编辑当前好友的人设，修改后点击“保存修改”。');
   } catch (error) {
     if (current) $('bot').value = current.bot_id;
     status(`读取失败：${String(error.message || error).slice(0, 220)}`, true);
-  } finally { setBusy(false); }
+  } finally { if (sequence === loadSequence) setBusy(false); }
 }
+
+$('save-binding').onclick = () => guard(async () => {
+  if (busy || !bindingState?.editable || !$('bound-persona').value) return;
+  const botId = selectedBotId;
+  const body = {bot_id: botId, persona_id: $('bound-persona').value,
+    expected_persona_id: bindingState.persona_id, config_id: bindingState.config_id};
+  setBusy(true);
+  status('正在保存机器人与人设绑定…');
+  try {
+    const result = await call(bridge.apiPost('bind-persona', body), 30000);
+    await load(botId);
+    status(result.copied ? '绑定已保存，已载入当前机器人的独立人设副本。' : '绑定已保存，已自动载入对应人设。');
+  } catch (error) { status(`绑定未能确认：${error.message}。请重新读取后核对。`, true); }
+  finally { setBusy(false); }
+});
 function updateBots(items, selected = current?.bot_id || $('bot').value) {
   const signature = JSON.stringify(items);
   if (signature !== botListSignature) {
@@ -109,12 +164,20 @@ async function refreshState(manual = false) {
   if (!manual && document.hidden) return;
   polling = true;
   try {
-    const requestedBot = current?.bot_id;
+    const requestedBot = selectedBotId;
     const requestedRevision = current?.revision;
-    const data = await call(bridge.apiGet('state', current ? {bot_id: current.bot_id} : {}));
-    if (busy || current?.bot_id !== requestedBot || current?.revision !== requestedRevision ||
+    const data = await call(bridge.apiGet('state', requestedBot ? {bot_id: requestedBot} : {}));
+    if (busy || selectedBotId !== requestedBot || current?.revision !== requestedRevision ||
         $('custom-dialog').open || $('delete-dialog').open) return;
     const dirty = changed();
+    if (data.current && !current) { await load(requestedBot); return; }
+    if (!data.current && current) {
+      if (dirty) $('external-change').hidden = false;
+      else await load(requestedBot);
+      return;
+    }
+    if (!dirty && data.binding) renderBinding(data.binding);
+    if (data.current) updateQQAccess(data);
     updateBots(data.bots);
     if (JSON.stringify(data.presets) !== JSON.stringify(presets)) updatePresets(data.presets, $('preset').value);
     if (data.current && current && (data.current.revision !== current.revision ||
@@ -169,7 +232,16 @@ function renderTools() {
     const label = document.createElement('label'); label.className = 'tool-option';
     const input = document.createElement('input'); input.type = 'checkbox'; input.value = tool.name;
     input.checked = selected === null || selected.includes(tool.name); input.onchange = counts;
-    const text = document.createElement('span'); text.textContent = tool.name + (tool.active ? '' : '（已停用或未加载）');
+    const names = {memory_companion_recall: '回忆相关记忆', memory_companion_query: '查找记忆',
+      memory_companion_remember: '保存记忆', memory_companion_core_memory: '核心记忆',
+      memory_companion_discover_sources: '查找记忆来源', memory_companion_sources: '查看记忆来源',
+      memory_companion_events: '查看记忆事件', memory_companion_navigate: '浏览记忆',
+      memory_companion_note_create: '新建记忆笔记', memory_companion_note_read: '读取记忆笔记',
+      memory_companion_note_delete: '删除记忆笔记', future_task: '定时提醒',
+      send_message_to_user: '发送消息', get_group_message_history: '查看群聊记录', astr_kb_search: '查询知识库'};
+    const text = document.createElement('span');
+    const title = names[tool.name] || (/搜索|search/.test(tool.name) ? '联网搜索' : tool.name);
+    text.textContent = title + (tool.active ? '' : '（已停用或未加载）');
     label.title = tool.description || tool.name; label.append(input, text); return label;
   }));
   $('tools-list').hidden = $('tools-mode').value !== 'selected';
@@ -182,11 +254,22 @@ $('sync-qq').onclick = async () => {
   catch (error) { status(`QQ 同步未完成：${error.message}。人设仍保存在本机，可稍后重试。`, true); }
   finally { setBusy(false); }
 };
-$('authorize-qq').onclick = async () => {
-  if (busy) return;
+$('qq-editor-enabled').onchange = async () => {
+  if (busy || !current) return;
+  const botId = current.bot_id;
+  const enabled = $('qq-editor-enabled').checked;
   setBusy(true);
-  try { await call(bridge.apiPost('authorize-qq', {umo: $('qq-umo').value})); $('qq-state').textContent = '已授权此 QQ 私聊编辑人设。'; status('授权已保存。现在可在 QQ 选择预设并确认保存。'); }
-  catch (error) { status(error.message, true); }
+  try {
+    const result = await call(bridge.apiPost('authorize-qq', {bot_id: botId, enabled}));
+    updateQQAccess({qq_editor_enabled: result.enabled});
+    status(result.enabled ? '已开启这个机器人的 QQ 人设编辑。可在 QQ 发送 /自定义人设 内容，再发送 /确认人设。' : '已关闭这个机器人的 QQ 人设编辑，待确认的 QQ 草稿已取消。网页仍可编辑。');
+  } catch (error) {
+    $('qq-editor-enabled').checked = qqEditorEnabled;
+    $('qq-access-state').textContent = '保存结果未确认，正在重新读取…';
+    try { updateQQAccess(await call(bridge.apiGet('state', {bot_id: botId}))); }
+    catch { $('qq-access-state').textContent = '无法确认开关状态，请点击“重新读取已保存内容”核对。'; }
+    status(`开关保存未确认：${error.message}`, true);
+  }
   finally { setBusy(false); }
 };
 $('load-preset').onclick = () => guard(() => {
@@ -194,7 +277,7 @@ $('load-preset').onclick = () => guard(() => {
   if (preset) {
     fill(preset.bio, preset.prompt);
     status('预设已载入草稿，可以修改简介和详细人设；保存后生效。');
-    $('bio').focus();
+    $('prompt').focus();
   }
 });
 function openPreset(item = null) {
@@ -343,7 +426,18 @@ try {
   const data = await call(bridge.apiGet('state'));
   updateBots(data.bots);
   updatePresets(data.presets);
-  if (data.bots.length) await load(data.bots[0].bot_id);
+  // Plugin Views have an opaque origin: use messages without weakening the sandbox.
+  const requested = await new Promise(resolve => {
+    const receive = (event) => {
+      if (event.source !== parent || event.data?.type !== 'ai-friend-bot-context') return;
+      clearTimeout(timer); window.removeEventListener('message', receive);
+      resolve(typeof event.data.botId === 'string' ? event.data.botId : null);
+    };
+    const timer = setTimeout(() => { window.removeEventListener('message', receive); resolve(null); }, 400);
+    window.addEventListener('message', receive);
+    parent.postMessage({type: 'ai-friend-bot-request'}, '*');
+  });
+  if (data.bots.length) await load(data.bots.find(b => b.bot_id === requested)?.bot_id || data.bots[0].bot_id);
   else status('尚未接入机器人。请点击“接入与管理 QQ 机器人”，完成官方绑定并保存。');
   setInterval(() => refreshState(), 5000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshState(); });

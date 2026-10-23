@@ -1,6 +1,7 @@
 {
+  "identity_records": {"type": "list", "description": "按 AppID 保存的 QQ 资料缓存与本机备注", "hint": "官方资料只读同步；本机备注不会修改 QQ 名称或头像。", "default": []},
   "bots": {"type": "list", "description": "可编辑的机器人", "hint": "每项包含 bot_id 与 name；机器人路由仍由原生配置管理。", "default": []},
   "hidden_presets": {"type": "list", "description": "已移除的预设标识", "hint": "从列表和 QQ 菜单移除，保留原生人格以便恢复。", "default": []},
-  "qq_editor_sessions": {"type": "list", "description": "允许在 QQ 编辑人设的私聊", "hint": "填写完整私聊 UMO（可用 /sid 查看）。权限只限人设指令，不会授予其他管理员能力；管理员也可使用。", "default": []},
+  "qq_editor_enabled_bots": {"type": "list", "description": "允许 QQ 编辑人设的机器人", "hint": "请在好友人设页面使用每个机器人的开关。开启后，任何与该机器人私聊的人都能管理人设；关闭后均不可从 QQ 编辑。仅影响人设，不授予系统管理员权限。", "default": []},
   "custom_presets": {"type": "list", "description": "自定义预设索引", "hint": "由人设表单维护；名称和原生人格引用保存在这里，设定内容保存在 AstrBot 原生人格数据库。", "default": []}
 }

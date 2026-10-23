@@ -14,6 +14,9 @@ from .persona_form import pack, unpack, revision
 from .qq_commands import QQPersonaCommands, ALIASES
 from .qq_menu import merge_persona_menu
 from .bot_registry import BotRegistry
+from .connections import connection_summary
+from .binding import PersonaBinding
+from .control import QQControl
 
 PLUGIN = 'astrbot_plugin_persona_studio'
 
@@ -26,9 +29,18 @@ class PersonaStudio(Star):
         self.presets = json.loads((Path(__file__).parent / 'presets.json').read_text(encoding='utf-8'))
         self.qq_commands = QQPersonaCommands(self)
         self.registry = BotRegistry(self)
+        self.binding = PersonaBinding(self)
+        self.control = QQControl(self)
         self._sync_task = None
         self._menu_versions = {}
         for endpoint, handler, method in [('state', self.state, 'GET'), ('save', self.save, 'POST'),
+                                          ('connections', self.connections, 'GET'),
+                                          ('bind-persona', self.bind_persona, 'POST'),
+                                          ('control-state', self.control_state, 'GET'),
+                                          ('control-persona', self.control_persona, 'GET'),
+                                          ('control-save', self.control_save, 'POST'),
+                                          ('control-identity', self.control_identity, 'POST'),
+                                          ('control-connection', self.control_connection, 'POST'),
                                           ('qq-menu', self.qq_menu, 'POST'), ('presets', self.create_preset, 'POST'),
                                           ('update-preset', self.update_preset, 'POST'),
                                           ('delete-preset', self.delete_preset, 'POST'),
@@ -56,6 +68,51 @@ class PersonaStudio(Star):
 
     def targets(self):
         return self.registry.targets()
+
+    @filter.on_llm_request(priority=-10000)
+    async def observe_request(self, event: AstrMessageEvent, req):
+        try: await self.control.observe(event,'request',request=req)
+        except Exception: self.logger.exception('读取实际请求状态失败')
+
+    @filter.on_llm_response(priority=-10000)
+    async def observe_response(self, event: AstrMessageEvent, response):
+        try: await self.control.observe(event,'response',response=response)
+        except Exception: self.logger.exception('读取实际回复状态失败')
+
+    @filter.after_message_sent(priority=-10000)
+    async def observe_sent(self, event: AstrMessageEvent):
+        try: await self.control.observe(event,'send')
+        except Exception: self.logger.exception('读取发送状态失败')
+
+    async def control_state(self):
+        try:
+            return json_response(await self.control.read(request.query.get('bot_id'),request.query.get('umo')))
+        except ValueError as exc: return error_response(str(exc))
+        except Exception:
+            self.logger.exception('读取 QQ 机器人与好友配置失败')
+            return error_response('无法读取实际配置，请刷新后重试。',status_code=500)
+
+    async def control_operation(self, operation):
+        try: return json_response(await operation(await request.json(default={})))
+        except ValueError as exc: return error_response(str(exc))
+        except Exception:
+            self.logger.exception('QQ 机器人管理操作失败')
+            return error_response('操作未能确认，请重新读取状态并核对；不要重复发送消息。',status_code=500)
+
+    async def control_save(self):
+        return await self.control_operation(self.control.save)
+
+    async def control_persona(self):
+        try:
+            persona=await self.context.persona_manager.get_persona(request.query.get('persona_id'))
+            return json_response({'persona_id':persona.persona_id,'prompt':persona.system_prompt})
+        except ValueError as exc: return error_response(str(exc))
+
+    async def control_identity(self):
+        return await self.control_operation(self.control.identity)
+
+    async def control_connection(self):
+        return await self.control_operation(self.control.connection)
 
     async def reconcile_bots(self):
         await self.registry.reconcile()
@@ -246,22 +303,40 @@ class PersonaStudio(Star):
     async def authorize_qq(self):
         try:
             body = await request.json(default={})
-            scope = str(body.get('umo', '')).strip()
-            parts = scope.split(':')
-            if len(parts) != 3 or parts[1] != 'FriendMessage' or not parts[2]:
-                raise ValueError('请在 QQ 发 /sid，粘贴完整私聊会话标识。')
-            self.target_persona(parts[0])
-            async with self.lock:
-                old = list(self.config.get('qq_editor_sessions', []))
-                self.config['qq_editor_sessions'] = list(dict.fromkeys([*old, scope]))
-                try:
-                    self.config.save_config()
-                except Exception:
-                    self.config['qq_editor_sessions'] = old
-                    raise
-            return json_response({'authorized': True})
+            if (not isinstance(body, dict) or not isinstance(body.get('bot_id'), str)
+                    or type(body.get('enabled')) is not bool):
+                raise ValueError('请刷新好友人设页面，使用“允许 QQ 编辑人设”开关。')
+            bot_id, enabled = body['bot_id'], body['enabled']
+            if not any(b['bot_id'] == bot_id for b in self.targets()):
+                raise ValueError('未找到该机器人，请刷新页面后重试。')
+            # Same lock order as QQ confirmation: command lock, then form lock.
+            async with self.qq_commands.lock:
+                async with self.lock:
+                    existed = 'qq_editor_enabled_bots' in self.config
+                    old = list(self.config.get('qq_editor_enabled_bots', []))
+                    updated = [bid for bid in old if bid != bot_id]
+                    if enabled:
+                        updated.append(bot_id)
+                    self.config['qq_editor_enabled_bots'] = updated
+                    try:
+                        self.config.save_config()
+                    except Exception:
+                        if existed:
+                            self.config['qq_editor_enabled_bots'] = old
+                        else:
+                            self.config.pop('qq_editor_enabled_bots', None)
+                        raise
+                if not enabled:
+                    for drafts in (self.qq_commands.pending, self.qq_commands.waiting_custom):
+                        for key in list(drafts):
+                            if key[0].split(':', 1)[0] == bot_id:
+                                drafts.pop(key)
+            return json_response({'bot_id': bot_id, 'enabled': enabled})
         except ValueError as exc:
             return error_response(str(exc))
+        except Exception:
+            self.logger.exception('QQ 人设编辑开关保存失败')
+            return error_response('开关未能保存，请刷新页面核对后重试。', status_code=500)
 
     async def create_preset(self):
         try:
@@ -333,12 +408,13 @@ class PersonaStudio(Star):
             bot_id = request.query.get('bot_id')
             data = {'bots': self.targets(), 'presets': await self.get_presets()}
             if bot_id and any(b['bot_id'] == bot_id for b in data['bots']):
-                data['current'] = await self.snapshot(bot_id)
+                data['binding'] = await self.binding.describe(bot_id)
+                data['current'] = await self.snapshot(bot_id) if data['binding'].get('available') else None
                 data['tools'] = [{'name': t.name, 'description': t.description, 'active': t.active}
                                  for t in self.tool_catalog().values()]
                 data['model_ready'] = bool(self.context.get_all_providers())
-                data['qq_authorized'] = any(s.startswith(bot_id + ':FriendMessage:')
-                                            for s in self.config.get('qq_editor_sessions', []))
+                data['qq_editor_enabled'] = bot_id in self.config.get('qq_editor_enabled_bots', [])
+                data['qq_authorized'] = data['qq_editor_enabled']
             return json_response(data)
         except ValueError as exc:
             return error_response(str(exc))
@@ -346,14 +422,42 @@ class PersonaStudio(Star):
             self.logger.exception('读取人设失败')
             return error_response('读取失败，请刷新页面；若持续失败，请查看本机日志。', status_code=500)
 
+    async def bind_persona(self):
+        try:
+            result = await self.binding.save(await request.json(default={}))
+            return json_response(result)
+        except ValueError as exc:
+            return error_response(str(exc))
+        except Exception:
+            self.logger.exception('保存机器人与人设绑定失败')
+            return error_response('绑定未能确认，请重新读取并核对配置。', status_code=500)
+
+    async def connections(self):
+        try:
+            bot_id = request.query.get('bot_id')
+            bots = self.targets()
+            if bot_id and not any(b['bot_id'] == bot_id for b in bots):
+                raise ValueError('未找到该 QQ 机器人，请重新选择。')
+            result = await connection_summary(self.context, bot_id)
+            result['qq'] = {'connected': sum(bool(b['enabled'] and b['connected']) for b in bots), 'total': len(bots)}
+            return json_response(result)
+        except ValueError as exc:
+            return error_response(str(exc))
+        except Exception:
+            self.logger.exception('读取连接状态失败')
+            return error_response('无法读取连接状态，请刷新重试。', status_code=500)
+
     async def save_form(self, body):
         if not isinstance(body, dict):
             raise ValueError('保存内容格式不正确。')
         prompt = pack(body.get('bio'), body.get('prompt'))
         async with self.lock:
             current = await self.snapshot(body.get('bot_id'))
+            config_id, _ = self.binding.profile(current['bot_id'])
             if body.get('persona_id') != current['persona_id'] or body.get('revision') != current['revision']:
                 raise ValueError('人设已在别处修改或绑定已改变。请先保留草稿，再重新读取。')
+            if self.binding.shared(current['persona_id'], config_id):
+                raise ValueError('该人设仍被其他配置共用。请先点击“保存绑定”建立独立副本，再编辑。')
             # Never silently edit a persona shared by multiple enabled robots.
             platforms = self.context.get_config().get('platform', [])
             for platform in platforms:
