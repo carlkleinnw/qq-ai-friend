@@ -8,7 +8,7 @@
   const MEMORY = '#/plugin-view/astrbot_plugin_memory_companion/记忆面板';
   const COMPANION = '#/plugin-view/astrbot_plugin_private_companion/companion-panel';
   const nativeLinks = new Map();
-  let root, lastRoute = '', requestVersion = 0;
+  let root, lastRoute = '', requestVersion = 0, layoutObserver, layoutMain;
   const paths = [
     '<path d="m3 10 9-7 9 7v10H3Z"/><path d="M9 20v-7h6v7"/>',
     '<circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/>',
@@ -20,9 +20,28 @@
   const icon = (i) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[i]}</svg>`;
   const link = (href, title, description = '') => `<a class="friend-row" href="${escape(href)}"><span><strong>${escape(title)}</strong>${description ? `<small>${escape(description)}</small>` : ''}</span><span aria-hidden="true">→</span></a>`;
   const items = [[HOME, '首页'], [MANAGE, '好友设置'], [MEMORY, '记忆与记录'], ['#/cron', '提醒'], [MORE, '更多']];
-  const coreItems = [[MANAGE+'?section=model', '模型配置'], [MANAGE+'?section=qq', 'QQ 连接'], [MANAGE+'?section=agent', 'Agent 连接']];
+  const coreItems = [['#/providers', '模型配置'], ['#/platforms', 'QQ 连接'], [MANAGE.replace(/manage$/,'agent'), 'Agent 连接']];
+  const isControl = hash => ['manage','model','qq','agent'].some(page=>hash.split('?')[0]===MANAGE.replace(/manage$/,page));
   let connectionVersion = 0;
   const coreHTML = (compact = false) => coreItems.map(([href, title], i) => `<a class="${compact ? 'friend-core-nav-link' : 'friend-core-link'}" href="${href}"><strong>${title}</strong><small data-connection="${i}">正在读取状态…</small></a>`).join('');
+  function syncConfigTabs(main) {
+    if(layoutMain!==main){layoutObserver?.disconnect();layoutMain=main;layoutObserver=new MutationObserver(()=>schedule());layoutObserver.observe(main,{attributes:true,attributeFilter:['style']});}
+    const route=location.hash.split('?')[0];
+    const aliases=['#/providers','#/platforms','#/config'];
+    const selected=coreItems.findIndex(([href],i)=>href===route||aliases[i]===route);
+    const visible=selected>=0;
+    main.classList.toggle('friend-connection-page',visible);
+    let tabs=document.querySelector('#friend-config-tabs');
+    if(!visible){tabs?.remove();return;}
+    if(!tabs){
+      tabs=document.createElement('nav');tabs.id='friend-config-tabs';tabs.setAttribute('aria-label','连接与模型配置');
+      const descriptions=['模型服务、参数与测试','机器人接入与连接状态','内置与外部 Agent'];
+      tabs.innerHTML=coreItems.map(([href,title],i)=>`<a href="${href}"><strong>${title}</strong><span>${descriptions[i]}</span></a>`).join('');
+      document.body.append(tabs);
+    }
+    tabs.style.left=getComputedStyle(main).paddingLeft;
+    [...tabs.children].forEach((a,i)=>{if(i===selected)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');});
+  }
 
   async function refreshConnections(botId = localStorage.getItem('friend-selected-bot')) {
     const version = ++connectionVersion;
@@ -124,6 +143,7 @@
     const sidebar = document.querySelector('.sidebar-container');
     const main = document.querySelector('.v-main');
     if (!sidebar || !main) {
+      document.querySelector('#friend-config-tabs')?.remove();
       document.body.classList.remove('friend-simple');
       document.querySelector('#friend-restore')?.remove();
       document.querySelectorAll('.friend-mobile-nav').forEach(nav => nav.remove());
@@ -133,6 +153,8 @@
       lastRoute = '';
       return;
     }
+    syncConfigTabs(main);
+    window.AIFriendNativeBots?.sync();
     if (sessionStorage.getItem('friend-native') === '1') {
       if (!document.querySelector('#friend-restore')) {
         const button = document.createElement('button'); button.id = 'friend-restore'; button.textContent = '返回简洁面板';
@@ -153,18 +175,36 @@
     }
     if (!root || !root.isConnected) { root = document.createElement('div'); root.className = 'friend-workspace'; main.append(root); lastRoute = ''; }
     const hash = decodeURI(location.hash);
+    const legacy = new URLSearchParams(location.hash.split('?')[1] || '');
+    if (hash.startsWith(MANAGE+'?') && ['model','qq','agent'].includes(legacy.get('section'))) {
+      const page = legacy.get('section'); legacy.delete('section');
+      location.replace((page==='model'?'#/providers':page==='qq'?'#/platforms':MANAGE.replace(/manage$/,page))+(legacy.size?'?'+legacy.toString():'')); return;
+    }
+    for(const [oldPage,nativePage] of [['model','#/providers'],['qq','#/platforms']]) {
+      if(hash.split('?')[0]===MANAGE.replace(/manage$/,oldPage)){location.replace(nativePage+(location.hash.includes('?')?'?'+location.hash.split('?')[1]:''));return;}
+    }
     if (!lastRoute && hash === '#/data/statistics') { location.replace(HOME); return; }
     const isHome = hash === HOME || hash === '#/welcome';
     const isMore = hash === MORE;
     main.classList.toggle('friend-custom-page', isHome || isMore);
     root.hidden = !(isHome || isMore);
-    let section = isHome ? 0 : hash.startsWith(PERSONA)||hash.startsWith(MANAGE) ? 1 : hash.startsWith(MEMORY) || hash.startsWith('#/data/conversations') ? 2 : hash.startsWith('#/cron') ? 3 : 4;
+    let section = isHome ? 0 : hash.startsWith(PERSONA)||isControl(hash) ? 1 : hash.startsWith(MEMORY) || hash.startsWith('#/data/conversations') ? 2 : hash.startsWith('#/cron') ? 3 : 4;
+    document.querySelectorAll('.friend-core-nav-link').forEach(a => {
+      if(a.getAttribute('href')===hash.split('?')[0])a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');
+    });
     document.querySelectorAll('[data-section]').forEach(a => { if (Number(a.dataset.section) === section) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current'); });
     if (hash !== lastRoute) {
+      const previousRoute=lastRoute;
       requestVersion++; lastRoute = hash;
+      if(isControl(hash)&&previousRoute.split('?')[0]===hash.split('?')[0]) {
+        const params=new URLSearchParams(location.hash.split('?')[1]||'');
+        const botId=params.get('bot_id')||localStorage.getItem('friend-selected-bot');
+        let selected;try{selected=JSON.parse(localStorage.getItem('friend-selected-session')||'null');}catch{}
+        document.querySelector('iframe')?.contentWindow.postMessage({type:'ai-friend-context-changed',botId,umo:params.has('umo')?params.get('umo'):(selected?.botId===botId?selected.umo:null),previousRoute},'*');
+      }
       if (isHome) renderHome(); else if (isMore) renderMore();
       refreshConnections();
-      document.title = `${items[section][1]} · AI 好友`;
+      document.title = `${coreItems.find(([href])=>href===hash.split('?')[0])?.[1]||items[section][1]} · AI 好友`;
     }
   }
   let queued = false;
@@ -172,21 +212,31 @@
   // Observe mounts only. Ignore text/style mutations generated by charts and status updates.
   new MutationObserver(mutations => { if (mutations.some(m => [...m.addedNodes, ...m.removedNodes].some(n => n.nodeType === 1 && (n.matches?.('.v-main,.sidebar-container,.v-navigation-drawer') || n.querySelector?.('.v-main,.sidebar-container'))))) schedule(); }).observe(document.documentElement, {childList:true, subtree:true});
   window.addEventListener('hashchange', schedule);
+  window.addEventListener('resize',schedule);
+  document.addEventListener('transitionend',event=>{if(event.target.matches?.('.v-main'))schedule();});
   window.addEventListener('message', (event) => {
     const frame = [...document.querySelectorAll('iframe')].find(f => f.contentWindow === event.source);
-    if (!frame || !(decodeURI(location.hash).startsWith(PERSONA)||decodeURI(location.hash).startsWith(MANAGE))) return;
+    if (!frame || !(decodeURI(location.hash).startsWith(PERSONA)||isControl(decodeURI(location.hash)))) return;
     if (event.data?.type === 'ai-friend-bot-request') {
       const botId = new URLSearchParams(location.hash.split('?')[1] || '').get('bot_id') || localStorage.getItem('friend-selected-bot');
       const params=new URLSearchParams(location.hash.split('?')[1]||'');
       let selected;try{selected=JSON.parse(localStorage.getItem('friend-selected-session')||'null');}catch{}
-      frame.contentWindow.postMessage({type: 'ai-friend-bot-context', botId,section:params.get('section'),umo:params.get('umo')||(selected?.botId===botId?selected.umo:null)}, '*');
+      frame.contentWindow.postMessage({type: 'ai-friend-bot-context', botId,section:params.get('section'),umo:params.has('umo')?params.get('umo'):(selected?.botId===botId?selected.umo:null)}, '*');
     } else if (event.data?.type === 'ai-friend-bot-selected' && typeof event.data.botId === 'string') {
       localStorage.setItem('friend-selected-bot', event.data.botId);
       refreshConnections(event.data.botId);
     } else if(event.data?.type==='ai-friend-session-selected'&&typeof event.data.botId==='string') {
       localStorage.setItem('friend-selected-session',JSON.stringify({botId:event.data.botId,umo:event.data.umo||null}));
+    } else if(event.data?.type==='ai-friend-navigate-approved'&&typeof event.data.href==='string'&&event.data.href.startsWith('#/')) {
+      location.hash=event.data.href;
     }
   });
+  document.addEventListener('click',event=>{
+    const a=event.target.closest('a[href]');
+    if(!a||event.ctrlKey||event.metaKey||event.shiftKey||event.button!==0||!isControl(decodeURI(location.hash)))return;
+    const href=a.getAttribute('href');const frame=document.querySelector('iframe');
+    if(frame&&href?.startsWith('#/')&&href!==location.hash){event.preventDefault();event.stopImmediatePropagation();frame.contentWindow.postMessage({type:'ai-friend-navigate',href},'*');}
+  },true);
   window.addEventListener('DOMContentLoaded', schedule);
   schedule();
 })();

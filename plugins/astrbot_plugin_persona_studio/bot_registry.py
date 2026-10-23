@@ -4,6 +4,7 @@ from copy import deepcopy
 import hashlib
 from collections import Counter
 from urllib.parse import urlsplit, urlunsplit
+from .profile_images import local_avatar
 
 QQ_TYPES = {'qq_official', 'qq_official_webhook'}
 
@@ -41,6 +42,7 @@ class BotRegistry:
             profile = profiles.get(appid, {})
             official_name = profile.get('qq_name', '')
             avatar = profile.get('qq_avatar', '') or profile.get('local_avatar', '')
+            avatar_source = 'qq_cache' if profile.get('qq_avatar') else 'local'
             name = official_name or profile.get('local_name') or platform.get('name') or old.get(bot_id, {}).get('name') or bot_id
             source = 'qq_cache' if official_name else 'local'
             connected = False
@@ -51,7 +53,9 @@ class BotRegistry:
                 if robot and str(adapter.appid) == appid:
                     name = robot.name or name
                     official_name = robot.name or official_name
-                    avatar = getattr(robot, 'avatar', '') or avatar
+                    if getattr(robot, 'avatar', ''):
+                        avatar = robot.avatar
+                        avatar_source = 'qq'
                     source = 'qq' if robot.name else source
                 client = adapter.client if adapter else None
                 if platform.get('enable', True) and client and not client.is_closed():
@@ -65,9 +69,22 @@ class BotRegistry:
                         status = 'unknown'  # HTTP callbacks have no persistent socket to inspect.
             except (AttributeError, RuntimeError):
                 pass  # robot metadata is populated after QQ's READY event.
+            safe_avatar = avatar_url(avatar)
+            qq_avatar = safe_avatar if avatar_source != 'local' else ''
+            if not safe_avatar:
+                safe_avatar = local_avatar(profile) or avatar_url(profile.get('local_avatar',''))
+                avatar_source = 'local'
+            own_avatar = local_avatar(profile) or avatar_url(profile.get('local_avatar',''))
+            if profile.get('web_override') is True:
+                if profile.get('local_name'):
+                    name = profile['local_name']; source = 'local'
+                if own_avatar:
+                    safe_avatar = own_avatar; avatar_source = 'local'
             result.append({'bot_id': bot_id, 'name': name, 'enabled': platform.get('enable', True),
-                           'appid': appid, 'avatar': avatar_url(avatar) or avatar_url(profile.get('local_avatar','')),
+                           'appid': appid, 'avatar': safe_avatar, 'avatar_source': avatar_source if safe_avatar else 'unavailable',
                            'qq_name': official_name, 'local_name': profile.get('local_name', ''), 'local_avatar':profile.get('local_avatar',''),
+                           'qq_avatar': qq_avatar, 'local_avatar_data': local_avatar(profile), 'web_override': profile.get('web_override', False),
+                           'profile_read_at': profile.get('profile_read_at'),
                            'name_source': source, 'identity_conflict': bool(appid and counts[appid] > 1),
                            'connection_status': status, 'connected': connected, 'error': self.errors.get(bot_id, '')})
         return result

@@ -7,6 +7,7 @@ import shutil
 ROOT = Path(__file__).resolve().parents[1]
 MARKER_START = '<!-- AI-Friend panel start -->'
 MARKER_END = '<!-- AI-Friend panel end -->'
+SHELL_ASSETS = ['friend-native-bots.js', 'friend-panel.js', 'friend-panel.css']
 
 
 def apply(root=ROOT, restore=False, include_plugin_code=False):
@@ -29,28 +30,31 @@ def apply(root=ROOT, restore=False, include_plugin_code=False):
     targets = []
     if not restore:
         targets.extend((root / 'installer/dashboard' / name, dist / 'assets' / name)
-                       for name in ['friend-panel.js', 'friend-panel.css'])
+                       for name in SHELL_ASSETS)
         editor = Path('plugins/astrbot_plugin_persona_studio/views/editor')
         targets.extend((root / editor / name, root / 'runtime/app/data' / editor / name)
                        for name in ['index.html', 'style.css', 'app.js'])
-        manage = Path('plugins/astrbot_plugin_persona_studio/views/manage')
-        if (root / manage).exists():
-            targets.extend((root / manage / name, root / 'runtime/app/data' / manage / name)
-                           for name in ['index.html','style.css','app.js'])
+        views = Path('plugins/astrbot_plugin_persona_studio/views')
+        for page in ('manage', 'model', 'qq', 'agent'):
+            if (root / views / page).exists():
+                targets.append((root / views / page / 'index.html', root / 'runtime/app/data' / views / page / 'index.html'))
+                targets.extend((root / views / 'manage' / name, root / 'runtime/app/data' / views / page / name)
+                               for name in ['style.css', 'app.js'])
         if include_plugin_code:
             plugin = Path('plugins/astrbot_plugin_persona_studio')
             targets.extend((root / plugin / name, root / 'runtime/app/data' / plugin / name)
-                           for name in ['main.py', 'bot_registry.py', 'binding.py', 'connections.py', 'control.py', '_conf_schema.json'])
+                           for name in ['main.py', 'bot_registry.py', 'binding.py', 'connections.py', 'control.py', 'profile_images.py', '_conf_schema.json'])
         # Validate all sources before writing any installed file.
         for origin, _ in targets:
             if not origin.is_file():
                 raise RuntimeError('缺少页面源文件：' + str(origin))
         assets = [(name, (root / 'installer/dashboard' / name).read_bytes())
-                  for name in ['friend-panel.js', 'friend-panel.css']]
+                  for name in SHELL_ASSETS]
         import hashlib
         version = hashlib.sha256(b''.join(data for _, data in assets)).hexdigest()[:12]
         block = (MARKER_START + '\n'
                  f'<link rel="stylesheet" href="/assets/friend-panel.css?v={version}">\n'
+                 f'<script defer src="/assets/friend-native-bots.js?v={version}"></script>\n'
                  f'<script defer src="/assets/friend-panel.js?v={version}"></script>\n' + MARKER_END)
         source = source.replace('</head>', block + '\n</head>', 1)
     changed = [(origin.read_bytes(), target) for origin, target in targets

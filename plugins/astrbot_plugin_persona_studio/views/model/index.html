@@ -1,0 +1,14 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>模型配置</title><link rel="stylesheet" href="./style.css"></head>
+<body data-page="model"><main>
+  <header><div><h1>模型配置</h1><p>管理模型服务，并选择机器人或好友实际使用的模型。</p></div><a href="/#/providers" target="_top">管理模型服务、连接参数与测试</a></header>
+  <div class="selectors"><label for="robot">QQ 机器人<select id="robot" disabled></select></label><label for="session">管理范围<select id="session" disabled><option value="">机器人默认设置</option></select></label></div>
+  <section class="identity" aria-label="QQ 机器人身份"><span id="avatar-slot" hidden></span><div><h2 id="robot-name">正在读取…</h2><p id="identity-meta"></p><p id="socket-state" role="status"></p></div></section>
+  <p id="status" role="status" aria-live="polite">正在连接管理面板…</p>
+  <div id="guard" hidden><p>有未保存的配置。切换后这份草稿会被放弃。</p><button id="discard" type="button">放弃草稿并切换</button><button id="keep" type="button">继续编辑</button></div>
+  <p id="scope-note" class="notice"></p><button id="reset-scope" type="button">载入机器人默认设置</button>
+  <nav class="sections" aria-label="配置页面"><a href="/#/plugin-view/astrbot_plugin_persona_studio/model" target="_top">模型配置</a><a href="/#/plugin-view/astrbot_plugin_persona_studio/qq" target="_top">QQ 连接</a><a href="/#/plugin-view/astrbot_plugin_persona_studio/agent" target="_top">Agent 连接</a><a href="/#/plugin-view/astrbot_plugin_persona_studio/manage" target="_top">好友设置</a></nav>
+<form id="chat-form"><fieldset id="chat-fields" disabled>
+    <details id="model" open><summary>模型配置</summary><div class="body"><label for="provider">这个范围使用的聊天模型<select id="provider"></select></label><p id="provider-note" class="hint"></p><a href="/#/providers" target="_top">管理模型服务、密钥和原生连接测试</a><button id="test-model" type="button">测试所选模型连接（会调用模型服务）</button><p id="test-result" role="status"></p></div></details>
+<footer><button id="save" class="primary" type="submit">保存当前范围的配置</button><span id="dirty">未修改</span></footer></fieldset></form>
+  <section class="result"><h2>保存与生效结果</h2><p id="applied">尚未在本页保存配置。</p><p id="observed">选择好友会话后，可查看最近一条消息的处理状态。</p><button id="refresh" type="button">重新读取实际状态</button></section>
+</main><script type="module" src="./app.js"></script></body></html>

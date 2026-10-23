@@ -53,10 +53,13 @@ def writable():
     async def put(umo,key,value): prefs[umo,key]=deepcopy(value)
     async def remove(umo,key): prefs.pop((umo,key),None)
     obj.sp=SimpleNamespace(session_get=get,session_put=put,session_remove=remove)
+    obj.sp.global_get=lambda key,default=None:get('global',key,default)
+    obj.sp.global_put=lambda key,value:put('global',key,value)
+    obj.sp.global_remove=lambda key:remove('global',key)
     obj.plugin.context=ctx;obj.plugin.logger=Mock();obj.plugin.registry=SimpleNamespace(ensure_companion=AsyncMock())
     async def resolved(bid,umo=None):
         cid=routes.get(umo) or routes[bid+'::'];cfg=configs[cid];service=await get(umo,'session_service_config',{})
-        pid=service.get('persona_id') or cfg['agent_runner']['config']['persona']['persona_id']
+        pid=service.get('persona_id') or cfg['agent_runner']['config'].get('persona',{}).get('persona_id')
         return {'config':cfg,'config_id':cid,'service':service,'provider_override':await get(umo,'provider_perf_chat_completion'),
                 'persona_id':pid,'revision':revision({'cid':cid,'cfg':dict(cfg),'service':service})}
     obj._resolved=resolved
@@ -115,3 +118,68 @@ def test_connection_reload_failure_restores_saved_adapter_options():
     obj=control();platform={'id':'a','appid':'100','enable':True};cfg=Config(platform=[platform]);reload=AsyncMock(side_effect=[RuntimeError('load failed'),None]);obj.plugin.context=SimpleNamespace(get_config=lambda:cfg,platform_manager=SimpleNamespace(reload=reload))
     with pytest.raises(RuntimeError):asyncio.run(obj.connection({'bot_id':'a','appid':'100','enable':False}))
     assert platform['enable'] is True and cfg.saved['platform'][0]['enable'] is True
+
+
+def test_model_page_preserves_persona_and_chat_switches_without_prompt_fields():
+    obj,configs,routes,prefs,personas=writable()
+    umo='a:FriendMessage:same-user'
+    prefs[umo,'session_service_config']={'persona_id':'persona-a','llm_enabled':False,'session_enabled':False}
+    prefs[umo,'provider_perf_chat_completion']='stale-model'
+    body=save_body(obj)
+    for key in ('prompt','persona_id','llm_enabled','session_enabled','runner_type'):body.pop(key)
+    body['section']='model'
+    before=deepcopy(personas)
+    asyncio.run(obj.save(body))
+    assert prefs[umo,'session_service_config']=={'persona_id':'persona-a','llm_enabled':False,'session_enabled':False}
+    assert (umo,'provider_perf_chat_completion') not in prefs
+    assert set(personas)==set(before)
+    assert configs[routes[umo]]['agent_runner']['config']['persona']['persona_id']=='persona-a'
+
+
+def test_agent_switch_retains_credentials_and_restores_previous_runner_settings():
+    obj,configs,routes,prefs,personas=writable()
+    umo='a:FriendMessage:same-user'
+    async def switch(kind,fields=None):
+        initial=await obj._resolved('a',umo)
+        return await obj.save({'section':'agent','bot_id':'a','appid':'100','umo':umo,
+            'revision':initial['revision'],'runner_type':kind,'agent_fields':fields or {}})
+    asyncio.run(switch('dify',{'dify_api_key':'private-test-key','dify_api_base':'https://example.invalid/v1','variables':{'name':'value'},'proxy':'http://localhost:9999'}))
+    cid=routes[umo]
+    asyncio.run(switch('local'))
+    assert configs[cid]['agent_runner']['config']['model']['provider_id']=='model'
+    assert configs[cid]['agent_runner']['config']['persona']['persona_id']=='persona-a'
+    asyncio.run(switch('dify',{'dify_api_key':''}))
+    runner=configs[cid]['agent_runner']['config']
+    assert runner['dify_api_key']=='private-test-key'
+    assert runner['dify_api_base']=='https://example.invalid/v1'
+    assert runner['variables']=={'name':'value'}
+    assert configs['profile-b']['agent_runner']['runner_type']=='local'
+
+
+@pytest.mark.parametrize('fields',[
+    {'variables':[]}, {'timeout':True}, {'dify_api_type':'unknown'}, {'dify_api_base':'file:///private'},
+])
+def test_invalid_agent_settings_do_not_write_or_publish_routes(fields):
+    obj,configs,routes,prefs,personas=writable()
+    body=save_body(obj);body.update(section='agent',runner_type='dify',agent_fields=fields)
+    with pytest.raises(ValueError):asyncio.run(obj.save(body))
+    assert set(configs)=={'profile-a','profile-b'}
+    assert routes=={'a::':'profile-a','b::':'profile-b'} and not prefs
+
+
+def test_connection_stale_revision_rejected_before_reloading():
+    obj=control();platform={'id':'a','appid':'100','enable':True};cfg=Config(platform=[platform]);reload=AsyncMock()
+    obj.plugin.context=SimpleNamespace(get_config=lambda:cfg,platform_manager=SimpleNamespace(reload=reload))
+    with pytest.raises(ValueError,match='重新读取'):
+        asyncio.run(obj.connection({'bot_id':'a','appid':'100','qq_revision':'stale','enable':False}))
+    assert platform['enable'] is True
+    reload.assert_not_awaited()
+
+
+def test_failed_agent_route_publish_rolls_back_archived_secrets():
+    obj,configs,routes,prefs,personas=writable()
+    obj.plugin.context.astrbot_config_mgr.ucr.update_routing_data=AsyncMock(side_effect=[RuntimeError('route failure'),None])
+    body=save_body(obj);body.update(section='agent',runner_type='dify',agent_fields={'dify_api_key':'temporary-private-key'})
+    with pytest.raises(RuntimeError):asyncio.run(obj.save(body))
+    assert not prefs
+    assert set(configs)=={'profile-a','profile-b'}

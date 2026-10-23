@@ -35,10 +35,12 @@ class PersonaStudio(Star):
         self._menu_versions = {}
         for endpoint, handler, method in [('state', self.state, 'GET'), ('save', self.save, 'POST'),
                                           ('connections', self.connections, 'GET'),
+                                          ('bot-identities', self.bot_identities, 'GET'),
                                           ('bind-persona', self.bind_persona, 'POST'),
                                           ('control-state', self.control_state, 'GET'),
                                           ('control-persona', self.control_persona, 'GET'),
                                           ('control-save', self.control_save, 'POST'),
+                                          ('control-test-model', self.control_test_model, 'POST'),
                                           ('control-identity', self.control_identity, 'POST'),
                                           ('control-connection', self.control_connection, 'POST'),
                                           ('qq-menu', self.qq_menu, 'POST'), ('presets', self.create_preset, 'POST'),
@@ -92,6 +94,12 @@ class PersonaStudio(Star):
             self.logger.exception('读取 QQ 机器人与好友配置失败')
             return error_response('无法读取实际配置，请刷新后重试。',status_code=500)
 
+    async def bot_identities(self):
+        try:
+            return json_response({'bots': self.targets()})
+        except Exception:
+            return error_response('无法读取 QQ 身份和连接状态，请稍后重试。', status_code=500)
+
     async def control_operation(self, operation):
         try: return json_response(await operation(await request.json(default={})))
         except ValueError as exc: return error_response(str(exc))
@@ -102,6 +110,20 @@ class PersonaStudio(Star):
     async def control_save(self):
         return await self.control_operation(self.control.save)
 
+    async def control_test_model(self):
+        body = await request.json(default={})
+        if not isinstance(body, dict):
+            return error_response('测试参数格式不正确。')
+        provider = next((p for p in self.context.get_all_providers() if p.meta().id == body.get('provider_id')), None)
+        if provider is None:
+            return error_response('模型未启用或不存在，请重新读取模型列表。')
+        try:
+            await asyncio.wait_for(provider.test(), timeout=60)
+        except Exception:
+            # Upstream exceptions can contain provider credentials or request headers.
+            return error_response('模型测试失败或超时，请核对服务地址、密钥、额度和网络。测试不会向 QQ 发送消息。')
+        return json_response({'note': '所选模型测试成功；这不代表 QQ 收发已验证。'})
+
     async def control_persona(self):
         try:
             persona=await self.context.persona_manager.get_persona(request.query.get('persona_id'))
@@ -109,7 +131,12 @@ class PersonaStudio(Star):
         except ValueError as exc: return error_response(str(exc))
 
     async def control_identity(self):
-        return await self.control_operation(self.control.identity)
+        try:
+            return json_response(await self.control.identity(await request.json(default={})))
+        except ValueError as exc:
+            return error_response(str(exc))
+        except Exception:
+            return error_response('名称与头像保存未能确认，请保留草稿并重新读取核对。未提交 QQ 平台资料修改。', status_code=500)
 
     async def control_connection(self):
         return await self.control_operation(self.control.connection)
@@ -453,9 +480,9 @@ class PersonaStudio(Star):
         prompt = pack(body.get('bio'), body.get('prompt'))
         async with self.lock:
             current = await self.snapshot(body.get('bot_id'))
-            config_id, _ = self.binding.profile(current['bot_id'])
             if body.get('persona_id') != current['persona_id'] or body.get('revision') != current['revision']:
                 raise ValueError('人设已在别处修改或绑定已改变。请先保留草稿，再重新读取。')
+            config_id, _ = self.binding.profile(current['bot_id'])
             if self.binding.shared(current['persona_id'], config_id):
                 raise ValueError('该人设仍被其他配置共用。请先点击“保存绑定”建立独立副本，再编辑。')
             # Never silently edit a persona shared by multiple enabled robots.

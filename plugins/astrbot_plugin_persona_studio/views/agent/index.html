@@ -1,0 +1,14 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Agent 连接</title><link rel="stylesheet" href="./style.css"></head>
+<body data-page="agent"><main>
+  <header><div><h1>Agent 连接</h1><p>选择当前范围的聊天处理方式，配置外部 Agent。</p></div><a href="/#/config" target="_top">内置 Agent 高级参数与完整配置</a></header>
+  <div class="selectors"><label for="robot">QQ 机器人<select id="robot" disabled></select></label><label for="session">管理范围<select id="session" disabled><option value="">机器人默认设置</option></select></label></div>
+  <section class="identity" aria-label="QQ 机器人身份"><span id="avatar-slot" hidden></span><div><h2 id="robot-name">正在读取…</h2><p id="identity-meta"></p><p id="socket-state" role="status"></p></div></section>
+  <p id="status" role="status" aria-live="polite">正在连接管理面板…</p>
+  <div id="guard" hidden><p>有未保存的配置。切换后这份草稿会被放弃。</p><button id="discard" type="button">放弃草稿并切换</button><button id="keep" type="button">继续编辑</button></div>
+  <p id="scope-note" class="notice"></p><button id="reset-scope" type="button">载入机器人默认设置</button>
+  <nav class="sections" aria-label="配置页面"><a href="/#/plugin-view/astrbot_plugin_persona_studio/model" target="_top">模型配置</a><a href="/#/plugin-view/astrbot_plugin_persona_studio/qq" target="_top">QQ 连接</a><a href="/#/plugin-view/astrbot_plugin_persona_studio/agent" target="_top">Agent 连接</a><a href="/#/plugin-view/astrbot_plugin_persona_studio/manage" target="_top">好友设置</a></nav>
+<form id="chat-form"><fieldset id="chat-fields" disabled>
+    <details id="agent" open><summary>Agent 连接</summary><div class="body"><label for="runner">由谁处理聊天<select id="runner"><option value="local">内置 Agent</option><option value="dify">Dify</option><option value="coze">Coze</option><option value="dashscope">阿里云百炼应用</option><option value="deerflow">DeerFlow</option></select></label><div id="agent-fields"></div><p class="hint">外部 Agent 管理自己的模型与人设。密钥留空表示保留已保存值。保存只确认配置与消息流程加载，不冒充外部服务已连通。</p><a href="/#/config" target="_top">原生完整配置页</a></div></details>
+<footer><button id="save" class="primary" type="submit">保存当前范围的配置</button><span id="dirty">未修改</span></footer></fieldset></form>
+  <section class="result"><h2>保存与生效结果</h2><p id="applied">尚未在本页保存配置。</p><p id="observed">选择好友会话后，可查看最近一条消息的处理状态。</p><button id="refresh" type="button">重新读取实际状态</button></section>
+</main><script type="module" src="./app.js"></script></body></html>

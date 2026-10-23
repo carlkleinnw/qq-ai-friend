@@ -13,6 +13,7 @@ def installation(tmp_path):
     files = {
         'runtime/app/data/dist/index.html': '<html><head><title>Native</title></head><body>Native</body></html>',
         'installer/dashboard/friend-panel.js': '// presentation',
+        'installer/dashboard/friend-native-bots.js': '// native identity presentation',
         'installer/dashboard/friend-panel.css': 'body {}',
         'runtime/app/data/config/private.json': '{"existing": true}',
     }
@@ -48,3 +49,18 @@ def test_missing_source_does_not_partially_install(installation):
         panel.apply(installation)
     assert index.read_bytes() == before
     assert not (installation / 'runtime/app/data/dist/assets/friend-panel.js').exists()
+
+
+def test_independent_pages_receive_shared_assets_and_repeated_apply_is_safe(installation):
+    source=installation/'plugins/astrbot_plugin_persona_studio/views'
+    for page in ('manage','model','qq','agent'):
+        (source/page).mkdir(exist_ok=True)
+        (source/page/'index.html').write_text('<h1>'+page+'</h1>')
+    (source/'manage/app.js').write_text('// shared behavior')
+    (source/'manage/style.css').write_text('/* shared style */')
+    panel.apply(installation)
+    for page in ('manage','model','qq','agent'):
+        target=installation/'runtime/app/data/plugins/astrbot_plugin_persona_studio/views'/page
+        assert (target/'index.html').read_text()=='<h1>'+page+'</h1>'
+        assert (target/'app.js').read_text()=='// shared behavior'
+    assert panel.apply(installation) is None
