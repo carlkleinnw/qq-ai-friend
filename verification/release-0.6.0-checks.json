@@ -1,0 +1,57 @@
+{
+  "version": "0.6.0",
+  "date": "2026-10-23",
+  "tested_code_commit": "a7be48702e2793f828aee66e4aee9942c063242d",
+  "project_tests": {
+    "passed": 153,
+    "failed": 0,
+    "warning": "Upstream audioop deprecation"
+  },
+  "powershell_syntax_passed": true,
+  "payload": {
+    "payload_hashes_valid": true,
+    "runtime_and_verification_excluded": true,
+    "known_configured_credentials_absent": true,
+    "manage_page_present": true,
+    "actual_control_present": true,
+    "simple_panel_install_hook_present": true,
+    "version_lock_matches": true,
+    "source_unchanged_since_build": true
+  },
+  "exe_upgrade_rollback_uninstall_reinstall": {
+    "previous_version_deployed_as_upgrade_baseline": true,
+    "new_exe_upgrade_preserves_data": true,
+    "simple_panel_installed_by_default": true,
+    "actual_control_plugin_installed": true,
+    "rollback_restores_old_panel_and_keeps_data": true,
+    "uninstall_preserves_data": true,
+    "same_location_reinstall_preserves_data": true,
+    "original_windows_registration_restored": true,
+    "original_shortcuts_restored": true
+  },
+  "exe_first_install": {
+    "new_exe_first_install_exit_zero": true,
+    "simple_panel_is_default_on_first_install": true,
+    "clean_empty_account_setup_and_core_entry_work": true,
+    "original_windows_registration_restored": true,
+    "original_shortcuts_restored": true
+  },
+  "dependency_preparation": "First installation prepared locked dependencies from package caches; additional clean v0.6.0 first-install test used an isolated copy of that environment without any application data.",
+  "historical_installer_observation": "Published v0.5.0 installer crashed once after its native deployment and service startup completed. Its deployed state was used as upgrade baseline. All tested v0.6.0 EXE operations returned zero. Historical assets were not modified.",
+  "artifact": {
+    "name": "AI-Friend_Setup_0.6.0.exe",
+    "sha256": "e3b0ed419f8f9d22bf62a629e7d2f1ca2fe09b8f668b0039a2107efb829502ea"
+  },
+  "local_review": "Reviewed AppID matching, exact session routes, shared-persona isolation, credential redaction, message observation and installer rollback. No blocking finding remains.",
+  "live_qq_evidence": "qq-control/live-reply-checks.json",
+  "browser_evidence": "qq-control/browser-checks.json",
+  "restoration_evidence": "qq-control/restoration-checks.json",
+  "not_live_tested": [
+    "alternative-model reply",
+    "external-Agent service",
+    "QQ stop/reception toggle and live reconnection",
+    "Webhook",
+    "long-term memory isolation for one human across several real robots"
+  ],
+  "private_data_excluded": true
+}

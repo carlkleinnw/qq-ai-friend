@@ -1,0 +1,20 @@
+{
+  "checks": {
+    "three_robots_on_home": true,
+    "model_fixed_entry": true,
+    "qq_fixed_entry": true,
+    "agent_fixed_entry": true,
+    "robot_1_identity_connection_scope": true,
+    "robot_1_avatar_loaded": true,
+    "robot_2_identity_connection_scope": true,
+    "robot_2_avatar_loaded": true,
+    "robot_3_identity_connection_scope": true,
+    "robot_3_avatar_loaded": true,
+    "draft_guard_and_switch_clear": true,
+    "session_autoload_and_test_prompt_restored": true,
+    "refresh_restores_selected_session": true,
+    "mobile_no_horizontal_overflow": true,
+    "no_browser_script_errors": true
+  },
+  "scope": "Local QQ acceptance on 2026-10-23; private identities and original configuration snapshots excluded."
+}

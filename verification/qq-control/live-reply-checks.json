@@ -1,0 +1,13 @@
+{
+  "checks": {
+    "prepared_via_webpage": true,
+    "request_observed": true,
+    "response_observed": true,
+    "send_observed": true,
+    "request_used_saved_profile": true,
+    "request_used_saved_persona": true,
+    "reply_contains_marker": true,
+    "user_confirmed_qq_receipt": true
+  },
+  "scope": "Local QQ acceptance on 2026-10-23; private identities and original configuration snapshots excluded."
+}

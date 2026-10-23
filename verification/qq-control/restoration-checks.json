@@ -1,0 +1,10 @@
+{
+  "checks": {
+    "original_session_configuration_restored": true,
+    "robot_1_default_unchanged": true,
+    "robot_1_session_0_restored_or_unchanged": true,
+    "robot_2_default_unchanged": true,
+    "robot_3_default_unchanged": true
+  },
+  "scope": "Local QQ acceptance on 2026-10-23; private identities and original configuration snapshots excluded."
+}
