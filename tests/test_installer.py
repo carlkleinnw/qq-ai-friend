@@ -303,3 +303,18 @@ def test_payload_accepts_root_license(tmp_path):
     package(archive, {'LICENSE': b'GNU license', 'NOTICE.md': b'Attribution'})
     extract_payload(archive, tmp_path / 'installed')
     assert (tmp_path / 'installed/LICENSE').read_bytes() == b'GNU license'
+
+
+def test_restore_metadata_uses_utf8_without_locale_dependency(tmp_path,monkeypatch):
+    root=tmp_path/'安装目录';backup=root/'runtime/upgrades/old';backup.mkdir(parents=True)
+    state=package(backup/'code.zip')
+    state['note']='中文版本清单'
+    deployment.write_json(backup/'state.json',state)
+    deployment.write_json(backup/'installation.json',{'environment':'envs/old','port':6190,'note':'旧环境'})
+    read=Path.read_text
+    def explicit_read(path,*args,**kwargs):
+        if path.suffix=='.json':assert kwargs.get('encoding')=='utf-8'
+        return read(path,*args,**kwargs)
+    monkeypatch.setattr(Path,'read_text',explicit_read)
+    restored=deployment.restore_code(root,backup,set())
+    assert restored['note']=='中文版本清单'

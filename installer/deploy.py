@@ -93,7 +93,7 @@ def download_checked(asset, cache):
 
 def prepare_dashboard(root, asset, force=False):
     marker = root / 'runtime/app/data/.installer-dashboard-sha256'
-    if not force and marker.exists() and marker.read_text().strip() == asset['sha256']:
+    if not force and marker.exists() and marker.read_text(encoding='utf-8').strip() == asset['sha256']:
         return
     cache = root / 'runtime/cache/downloads' / (asset['sha256'] + '.zip')
     cache.parent.mkdir(parents=True, exist_ok=True)
@@ -117,7 +117,7 @@ def download_plugins(root, lock):
         target = root / 'runtime/vendor' / plugin['directory']
         marker = target / '.installer-source-sha256'
         if marker.exists():
-            if marker.read_text().strip() != plugin['sha256']:
+            if marker.read_text(encoding='utf-8').strip() != plugin['sha256']:
                 raise ValueError('上游插件版本变更需要先进行迁移验收')
             continue
         if target.exists():
@@ -164,8 +164,8 @@ def restore_code(root, backup, current_files):
     for name in set(current_files) - set(manifest['files']):
         remove_owned_file(root, name)
     extract_payload(backup / 'code.zip', root)
-    write_json(root / 'runtime/installation.local.json', json.loads((backup / 'installation.json').read_text()))
-    state = json.loads((backup / 'state.json').read_text())
+    write_json(root / 'runtime/installation.local.json', json.loads((backup / 'installation.json').read_text(encoding='utf-8')))
+    state = json.loads((backup / 'state.json').read_text(encoding='utf-8'))
     write_json(root / 'runtime' / STATE_NAME, state)
     copy_own_plugins(root)
     # The shell lives in generated dashboard files, outside the program manifest.
@@ -189,9 +189,9 @@ def deploy(root, payload, prefix):
     runtime.mkdir(parents=True, exist_ok=True)
     with FileLock(str(runtime / 'deployment.lock'), timeout=10), FileLock(str(runtime / 'service.lock'), timeout=150):
         state_path = runtime / STATE_NAME
-        old = json.loads(state_path.read_text()) if state_path.exists() else None
+        old = json.loads(state_path.read_text(encoding='utf-8')) if state_path.exists() else None
         pending_path = runtime / 'installation-in-progress.local.json'
-        pending = json.loads(pending_path.read_text()) if pending_path.exists() else None
+        pending = json.loads(pending_path.read_text(encoding='utf-8')) if pending_path.exists() else None
         reinstall = bool(old and (runtime / 'uninstalled.local.json').exists())
         if old and old['data_format'] != manifest['data_format']:
             raise ValueError('数据格式发生变化，需要专门的迁移安装包')
@@ -234,10 +234,10 @@ def deploy(root, payload, prefix):
                     remove_owned_file(root, name)
             extract_payload(payload, root)
             settings_path = runtime / 'installation.local.json'
-            settings = json.loads(settings_path.read_text()) if settings_path.exists() else {'port': available_port()}
+            settings = json.loads(settings_path.read_text(encoding='utf-8')) if settings_path.exists() else {'port': available_port()}
             settings.update(environment=prefix.relative_to(runtime).as_posix(), version=manifest['version'], product='ai-friend')
             write_json(runtime / 'installation.local.json', settings)
-            lock = json.loads((root / 'installer/installer-lock.json').read_text())
+            lock = json.loads((root / 'installer/installer-lock.json').read_text(encoding='utf-8'))
             download_plugins(root, lock)
             prepare_dashboard(root, lock['dashboard'])
             copy_own_plugins(root)
@@ -268,7 +268,7 @@ def rollback(root):
     root = validate_root(root)
     runtime = root / 'runtime'
     with FileLock(str(runtime / 'deployment.lock'), timeout=10), FileLock(str(runtime / 'service.lock'), timeout=150):
-        current = json.loads((runtime / STATE_NAME).read_text())
+        current = json.loads((runtime / STATE_NAME).read_text(encoding='utf-8'))
         if not current.get('rollback'):
             raise ValueError('没有上一程序版本可恢复')
         backup = Path(current['rollback']).resolve()
