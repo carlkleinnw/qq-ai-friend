@@ -8,7 +8,10 @@
     "scripts/repair_memory_panel.py",
     "scripts/repair_tts_timeout.py",
     "scripts/repair_cron_failure.py",
-    "scripts/repair_backup_coverage.py"
+    "scripts/repair_backup_coverage.py",
+    "scripts/repair_profile_lifecycle.py",
+    "scripts/repair_plugin_routes.py",
+    "scripts/repair_plugin_download.py"
   ],
   "plugins": [
     {

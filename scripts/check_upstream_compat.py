@@ -8,6 +8,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
+from zipfile import ZipFile
 
 ROOT = Path(__file__).resolve().parents[1]
 AUDITED_EVENT_LOCAL_HOOKS = {
@@ -21,9 +22,24 @@ AUDITED_EVENT_LOCAL_HOOKS = {
 def main():
     original = ROOT / "runtime/vendor/private_companion"
     locked = next(p["commit"] for p in json.loads((ROOT / "upstream.lock.json").read_text())["plugins"] if p["directory"] == "private_companion")
-    actual = subprocess.check_output(["git", "-C", str(original), "rev-parse", "HEAD"], text=True).strip()
-    if actual != locked or subprocess.run(["git", "-C", str(original), "diff", "--quiet", "HEAD"]).returncode:
-        raise ValueError("Upstream checkout changed; review compatibility against its exact source")
+    if (original/'.git').exists():
+        actual = subprocess.check_output(["git", "-C", str(original), "rev-parse", "HEAD"], text=True).strip()
+        if actual != locked or subprocess.run(["git", "-C", str(original), "diff", "--quiet", "HEAD"]).returncode:
+            raise ValueError("Upstream checkout changed; review compatibility against its exact source")
+    else:
+        # Installed releases ship verified source archives rather than Git metadata.
+        lock=json.loads((ROOT/'installer/installer-lock.json').read_text('utf-8'))
+        expected=next(p['sha256'] for p in lock['plugins'] if p['directory']=='private_companion')
+        archive=ROOT/'runtime/cache/downloads'/(expected+'.zip')
+        if hashlib.sha256(archive.read_bytes()).hexdigest()!=expected:
+            raise ValueError('Cached upstream archive integrity check failed')
+        with ZipFile(archive) as source_zip:
+            for member in source_zip.infolist():
+                if member.is_dir():continue
+                relative=Path(*Path(member.filename).parts[1:])
+                target=(original/relative).resolve()
+                if not target.is_relative_to(original.resolve()) or target.read_bytes()!=source_zip.read(member):
+                    raise ValueError('Installed vendor source changed; review compatibility before testing')
     source = (original / "main.py").read_text(encoding="utf-8")
     audited = {}
     for node in ast.walk(ast.parse(source)):

@@ -86,7 +86,7 @@ try {
     $lock = Get-Content -LiteralPath (Join-Path $stage 'installer\installer-lock.json') -Raw -Encoding UTF8 | ConvertFrom-Json
     if ((Get-InstallerSha $CondaExe) -ne $lock.conda_standalone.executable_sha256) { throw '运行环境工具校验失败。' }
     $lockBytes = [IO.File]::ReadAllBytes((Join-Path $stage 'requirements.lock.txt')) + [IO.File]::ReadAllBytes((Join-Path $stage 'installer\conda-win64.lock'))
-    foreach ($repair in @('repair_tts_timeout.py','repair_cron_failure.py','repair_backup_coverage.py','repair_profile_lifecycle.py')) {
+    foreach ($repair in @('repair_tts_timeout.py','repair_cron_failure.py','repair_backup_coverage.py','repair_profile_lifecycle.py','repair_plugin_routes.py','repair_plugin_download.py')) {
         $lockBytes += [IO.File]::ReadAllBytes((Join-Path $stage ('scripts\'+$repair)))
     }
     $hashAlgorithm = [Security.Cryptography.SHA256]::Create()

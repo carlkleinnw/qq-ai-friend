@@ -33,7 +33,7 @@ function memorySelectOptions(labels, current) {
 '''
 
 
-def patched_source(source: str) -> str:
+def patched_source(source: str, *, preserve_initial_navigation=True) -> str:
     for name, labels in LABELS.items():
         source, count = re.subn(
             rf"const {name} = \{{.*?\n\}};",
@@ -54,6 +54,10 @@ def patched_source(source: str) -> str:
                             '["", ...Object.keys(VISIBILITY_LABEL)]', 1)
     source = source.replace('["", "active", "stable", "fading", "archived", "expired"]',
                             '["", ...Object.keys(LIFECYCLE_LABEL)]', 1)
+    if preserve_initial_navigation:
+        if source.count('  await go(target);') != 1:
+            raise ValueError('Memory page boot navigation changed')
+        source=source.replace('  await go(target);','  await go(renderToken > 0 ? state.view : target);',1)
     return source
 
 
@@ -64,13 +68,17 @@ def repair_panel(target: Path, original: bytes, backup: Path, *, check=False) ->
     current = target.read_bytes()
     if current == replacement:
         return True
-    if current != original:
+    previous=patched_source(original.decode('utf-8'),preserve_initial_navigation=False).encode('utf-8')
+    if current not in (original,previous):
         raise ValueError("Installed editor has other changes; refusing to overwrite them")
     if check:
         return False
     if shutil.disk_usage(target.parent).free < len(current) + len(replacement) + 1024 * 1024:
         raise OSError("Insufficient space for editor backup and replacement")
     backup.parent.mkdir(parents=True, exist_ok=True)
+    if current==previous:
+        navigation_backup=backup.with_name('app.js.before-navigation-guard')
+        if not navigation_backup.exists():navigation_backup.write_bytes(current)
     if not backup.exists():
         backup.write_bytes(current)
     temporary = target.with_suffix(".js.tmp")

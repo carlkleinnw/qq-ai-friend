@@ -27,21 +27,35 @@ def main():
             client.headers["Authorization"] = "Bearer " + checked(client.post("/api/v1/auth/login", json={"username": cr["username"], "password": cr["initial_password"]}))["token"]
             stats = checked(client.get("/api/v1/bots/stats"))["platforms"]
             cfg = checked(client.get('/api/v1/config-profiles/default'))['config']
-            editor = checked(client.get('/api/v1/plugins/astrbot_plugin_persona_studio/config'))['config']
-            names = {bot['bot_id']: bot['name'] for bot in editor.get('bots', [])}
+            identity_response=client.get('/api/v1/plugins/extensions/astrbot_plugin_persona_studio/bot-identities')
+            identity_response.raise_for_status()
+            identities=identity_response.json()['bots']
+            identity_map={bot['bot_id']:bot for bot in identities}
             bots = [bot for bot in cfg.get('platform', []) if bot.get('enable', True) and bot.get('type') in {'qq_official', 'qq_official_webhook'}]
-            result['bots'] = [{'name': names.get(bot['id'], 'QQ好友 '+str(index+1)),
+            result['bots'] = [{'bot_id':bot['id'],'appid':str(bot.get('appid','')),
+                               'name': identity_map.get(bot['id'],{}).get('name',bot['id']),
+                               'connection_status':identity_map.get(bot['id'],{}).get('connection_status','unknown'),
                                'adapter_status': next((p['status'] for p in stats if p['id'] == bot['id']), 'missing')}
                               for index, bot in enumerate(bots)]
             routes = checked(client.get('/api/v1/config-routes'))['routing']
-            if bots and routes.get(bots[0]['id']+'::'):
-                cfg = checked(client.get('/api/v1/config-profiles/'+routes[bots[0]['id']+'::']))['config']
-            result["dafeiyu_voice_enabled"] = cfg["provider_tts_settings"]["enable"]
-            result["dafeiyu_retry_attempts"] = cfg["agent_runner"]["config"]["model"]["request_max_retries"]
-            provider_id = cfg["agent_runner"]["config"]["model"]["provider_id"]
-            provider = checked(client.get("/api/v1/providers/by-id", params={"provider_id": provider_id, "merged": True}))["provider"]
-            result["model_key_present"] = bool(provider.get("key"))
-            result["model_network_timeout_seconds"] = provider.get("timeout")
+            model_keys=[]
+            for bot in result['bots']:
+                config_id=routes.get(bot['bot_id']+'::','default')
+                cfg=checked(client.get('/api/v1/config-profiles/'+config_id))['config']
+                runner=cfg.get('agent_runner',{})
+                bot['runner_type']=runner.get('runner_type','local')
+                bot['voice_enabled']=cfg.get('provider_tts_settings',{}).get('enable',False)
+                if bot['runner_type']!='local':continue
+                model=runner.get('config',{}).get('model',{})
+                bot['retry_attempts']=model.get('request_max_retries')
+                provider_id=model.get('provider_id')
+                if provider_id:
+                    provider=checked(client.get('/api/v1/providers/by-id',params={'provider_id':provider_id,'merged':True}))['provider']
+                    bot['model_key_present']=any(str(key).strip() for key in provider.get('key',[]))
+                    bot['model_timeout_seconds']=provider.get('timeout')
+                else:bot['model_key_present']=False
+                model_keys.append(bot['model_key_present'])
+            result['model_key_present']=all(model_keys) if model_keys else None
             jobs = checked(client.get("/api/v1/cron/jobs"))
             if isinstance(jobs, dict):
                 jobs = jobs.get("jobs", [])
@@ -51,7 +65,7 @@ def main():
     report.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print("本地面板：" + ("可访问" if result["dashboard_ready"] else "未运行，请先双击启动AI好友"))
     for bot in result.get("bots", []):
-        print(bot["name"] + "连接进程状态：" + str(bot["adapter_status"]))
+        print(bot["name"] + " QQ连接：" + str(bot['connection_status']) + "；接入进程：" + str(bot["adapter_status"]))
     print("安装盘剩余空间：" + str(result["disk_free_gib"]) + " GB")
     if not result.get('bots') and result['dashboard_ready']:
         print('尚未接入 QQ：请在面板扫码保存，再从维护窗口同步。')
