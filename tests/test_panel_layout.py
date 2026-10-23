@@ -3,6 +3,23 @@ import importlib.util
 from pathlib import Path
 import pytest
 
+
+def test_installer_initialization_applies_the_panel_automatically(tmp_path, monkeypatch):
+    import sys
+    scripts=Path(__file__).parents[1]/'scripts'
+    monkeypatch.syspath_prepend(str(scripts))
+    import initialize_installation as initialization
+    monkeypatch.setattr(initialization,'ROOT',tmp_path)
+    (tmp_path/'runtime/app/data/config').mkdir(parents=True)
+    (tmp_path/'runtime/tools').mkdir()
+    (tmp_path/'runtime/tools/ffmpeg.exe').write_bytes(b'existing-fixture')
+    called=[]
+    monkeypatch.setattr(initialization.subprocess,'run',lambda args,**kw:called.append(Path(args[1]).name))
+    initialization.offline()
+    assert called[0]=='init_mvp.py'
+    assert called[-1]=='apply_panel_layout.py'
+    assert 'repair_plugin_routes.py' in called and 'repair_plugin_download.py' in called
+
 spec = importlib.util.spec_from_file_location('panel_layout', Path(__file__).parents[1] / 'scripts/apply_panel_layout.py')
 panel = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(panel)
