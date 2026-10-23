@@ -96,7 +96,7 @@ try {
     $layout.RowStyles.Add([Windows.Forms.RowStyle]::new('Percent',100))
     $layout.RowStyles.Add([Windows.Forms.RowStyle]::new('Absolute',32))
     $title=[Windows.Forms.Label]::new(); $title.Text='AI好友 '+$settings.version; $title.Font=[Drawing.Font]::new('Microsoft YaHei UI',17,[Drawing.FontStyle]::Bold); $title.AutoSize=$true
-    $intro=[Windows.Forms.Label]::new(); $intro.Dock='Fill'; $intro.Text="首次使用：查看登录信息 → 在面板填写自己的 Key、扫码保存 QQ → 同步 QQ 机器人。`r`nQQ 人设授权：在 QQ 发 /sid，复制完整 UMO 后点击「授权 QQ 私聊」。`r`n更新时选择新版安装 EXE，升级前自动备份；数据和日志保存在本机。"
+    $intro=[Windows.Forms.Label]::new(); $intro.Dock='Fill'; $intro.Text="首次使用：查看登录信息 → 在面板填写自己的 Key、扫码保存 QQ → 同步 QQ 机器人。`r`nQQ 人设编辑：点击「QQ 人设编辑开关」，选择机器人后打开「允许 QQ 编辑人设」。`r`n更新时选择新版安装 EXE，升级前自动备份；数据和日志保存在本机。"
     $buttons=[Windows.Forms.FlowLayoutPanel]::new(); $buttons.Dock='Fill'; $buttons.WrapContents=$true
     $output=[Windows.Forms.TextBox]::new(); $output.Dock='Fill'; $output.Multiline=$true; $output.ReadOnly=$true; $output.ScrollBars='Vertical'; $output.Text='程序位置：'+$root+"`r`n"+'面板地址：'+$url+"`r`n"+'就绪。'
     $status=[Windows.Forms.Label]::new(); $status.Dock='Fill'; $status.Text='操作只影响此安装目录。卸载默认保留 runtime 数据。'
@@ -135,11 +135,7 @@ try {
         } finally { $pass.Text=''; $login.Dispose() }
     }
     Add-Action '同步 QQ 机器人' { Run-Task 'scripts\finish_setup.py' }
-    Add-Action '授权 QQ 私聊' {
-        Add-Type -AssemblyName Microsoft.VisualBasic
-        $umo=[Microsoft.VisualBasic.Interaction]::InputBox('在 QQ 发 /sid，将返回的完整 UMO 粘贴到这里（不要包含外侧括号）。','授权人设编辑','')
-        if ($umo) { Run-Task 'scripts\finish_setup.py' @('--authorize-umo',$umo.Trim()) }
-    }
+    Add-Action 'QQ 人设编辑开关' { Start-Process ($url+'/#/plugin-view/astrbot_plugin_persona_studio/editor') }
     Add-Action '备份用户数据' { Run-Task 'scripts\native_backup.py' @('create') }
     Add-Action '检查备份恢复' { Run-Task 'scripts\native_backup.py' @('verify') }
     Add-Action '打开日志目录' { Start-Process explorer.exe -ArgumentList ('"'+(Join-Path $root 'runtime')+'"') }

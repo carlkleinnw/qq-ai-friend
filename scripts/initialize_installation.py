@@ -18,7 +18,8 @@ def offline():
     subprocess.run([sys.executable, str(ROOT / 'scripts/init_mvp.py')], check=True)
     for script in ['repair_memory_panel.py', 'repair_tts_timeout.py', 'repair_cron_failure.py', 'repair_backup_coverage.py', 'repair_profile_lifecycle.py']:
         subprocess.run([sys.executable, str(ROOT / 'scripts' / script)], check=True)
-    for name, config in [('astrbot_plugin_persona_studio', {'bots': [], 'qq_editor_sessions': []}),
+    subprocess.run([sys.executable, str(ROOT / 'scripts/apply_panel_layout.py')], check=True)
+    for name, config in [('astrbot_plugin_persona_studio', {'bots': [], 'qq_editor_enabled_bots': []}),
                          ('astrbot_plugin_reliability', {'bot_ids': []})]:
         file = ROOT / 'runtime/app/data/config' / (name + '_config.json')
         if not file.exists():

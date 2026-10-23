@@ -89,6 +89,32 @@ def test_program_rollback_preserves_private_data_and_environment_pointer(tmp_pat
     assert json.loads((root / 'runtime/installation.local.json').read_text())['environment'] == 'envs/old'
 
 
+def test_rollback_removes_new_shell_when_restoring_release_without_it(tmp_path):
+    root = tmp_path / 'app'
+    backup = root / 'runtime/upgrades/old'
+    backup.mkdir(parents=True)
+    dashboard = tmp_path / 'dashboard.zip'
+    with ZipFile(dashboard, 'w') as archive:
+        archive.writestr('dist/index.html', '<html><head></head><body>Original</body></html>')
+    sha = hashlib.sha256(dashboard.read_bytes()).hexdigest()
+    lock = {'plugins': [], 'dashboard': {'sha256': sha, 'url': 'https://invalid.example/dashboard.zip'}}
+    old = package(backup / 'code.zip', {'README.md': b'Old', 'installer/installer-lock.json': json.dumps(lock).encode()})
+    deployment.write_json(backup / 'state.json', old)
+    deployment.write_json(backup / 'installation.json', {'environment': 'envs/old', 'port': 6190})
+    cache = root / 'runtime/cache/downloads'
+    cache.mkdir(parents=True)
+    (cache / (sha+'.zip')).write_bytes(dashboard.read_bytes())
+    dist = root / 'runtime/app/data/dist'
+    dist.mkdir(parents=True)
+    (dist / 'index.html').write_text('New shell references missing plugin page')
+    (dist.parent / '.installer-dashboard-sha256').write_text(sha)
+    private = root / 'runtime/app/data/private.json'
+    private.write_bytes(b'preserve')
+    deployment.restore_code(root, backup, set(old['files']))
+    assert (dist / 'index.html').read_text() == '<html><head></head><body>Original</body></html>'
+    assert private.read_bytes() == b'preserve'
+
+
 def test_failed_first_install_can_resume_without_resetting_user_data(tmp_path, monkeypatch):
     root = tmp_path / 'app'
     prefix = root / 'runtime/envs/clean'

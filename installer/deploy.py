@@ -91,9 +91,9 @@ def download_checked(asset, cache):
             time.sleep(2)
 
 
-def prepare_dashboard(root, asset):
+def prepare_dashboard(root, asset, force=False):
     marker = root / 'runtime/app/data/.installer-dashboard-sha256'
-    if marker.exists() and marker.read_text().strip() == asset['sha256']:
+    if not force and marker.exists() and marker.read_text().strip() == asset['sha256']:
         return
     cache = root / 'runtime/cache/downloads' / (asset['sha256'] + '.zip')
     cache.parent.mkdir(parents=True, exist_ok=True)
@@ -168,6 +168,14 @@ def restore_code(root, backup, current_files):
     state = json.loads((backup / 'state.json').read_text())
     write_json(root / 'runtime' / STATE_NAME, state)
     copy_own_plugins(root)
+    # The shell lives in generated dashboard files, outside the program manifest.
+    # Restore the pinned dashboard too, so rolling back cannot leave a new shell
+    # pointing at plugin pages which the previous release does not contain.
+    lock = json.loads((root / 'installer/installer-lock.json').read_text(encoding='utf-8'))
+    if lock.get('dashboard', {}).get('sha256'):
+        prepare_dashboard(root, lock['dashboard'], True)
+        if (root / 'scripts/apply_panel_layout.py').is_file():
+            run_script(root, Path(sys.executable), 'scripts/apply_panel_layout.py')
     return state
 
 

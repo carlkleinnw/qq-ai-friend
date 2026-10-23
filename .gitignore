@@ -5,6 +5,7 @@ data/
 logs/
 dist/
 verification/private/
+verification/**/private/
 research/video_frames/
 __pycache__/
 *.pyc
